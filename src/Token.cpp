@@ -42,7 +42,7 @@ namespace goo {
                 break;
         }
 
-        return lexeme + " " + std::to_string(column) + ":" + std::to_string(line);
+        return lexeme + " " + std::to_string(line) + ":" + std::to_string(column);
     }
 
 } // goo

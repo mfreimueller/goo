@@ -19,6 +19,17 @@ namespace goo {
 
     class Visitor;
 
+    /// A statement is a single command that performs a certain operation. This class
+    /// represents an abstract base for any actual brainfuck statements.
+    ///
+    /// Statements are used by the Interpreter or the Assembler to execute the brainfuck
+    /// code or translate it to assembler. A statement itself is 'dumb', in that it doesn't
+    /// know how to process itself. Instead, each processing unit, such as the Interpreter,
+    /// implements the Visitor-interface, which calls ::accept(), which in turn
+    /// calls the Visitor.
+    ///
+    /// For debugging purposes, each statement tracks its line and column, to make it
+    /// easier to pinpoint errors.
     class Stmt {
     public:
         const int column;
@@ -27,6 +38,9 @@ namespace goo {
         Stmt(const int column, const int line): column(column), line(line) {}
         virtual ~Stmt() = default;
 
+        /// Guides a visitor to the correct function to process this statement. Each
+        /// inheriting class of Stmt must call the proper function.
+        /// @param visitor A visitor that processes this statement.
         virtual void accept(Visitor *visitor) = 0;
 
         [[nodiscard]] std::string debugInfo() const {
@@ -34,6 +48,10 @@ namespace goo {
         }
     };
 
+    /// A visitor to a statement. The purpose of the visitor is to process a
+    /// statement, as statements themselves are 'dumb' and contain no business logic.
+    /// For each statement type there must be a corresponding ::visitXYZ function
+    /// which processes this particular statement.
     class Visitor {
     public:
         virtual ~Visitor() = default;

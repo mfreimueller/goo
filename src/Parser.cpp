@@ -17,10 +17,8 @@ namespace goo {
         return stmts;
     }
 
-    Stmt *Parser::statement() {
-        auto token = tokens.at(current++);
-
-        switch (token.type) {
+    Stmt *Parser::statement() { // NOLINT(*-no-recursion)
+        switch (const auto token = tokens.at(current++); token.type) {
             case INC_BYTE:
                 return new IncrementByte(token.column, token.line);
             case DEC_BYTE:
@@ -36,19 +34,23 @@ namespace goo {
             case IF:
                 return conditional(token.column, token.line);
             case FI:
+                // If we reach this case, we have a closing tag ] without any
+                // opening. This is treated as a syntax error.
                 // TODO: throw error?
                 break;
             case DEBUG:
                 return new Debug(token.column, token.line);
-                break;
             default:
+                // At this point there should be no unknown token type. Having
+                // reached this point means the we encountered an error.
+                // TODO: throw error
                 break;
         }
 
         return nullptr;
     }
 
-    Conditional *Parser::conditional(const int column, const int line) {
+    Conditional *Parser::conditional(const int column, const int line) { // NOLINT(*-no-recursion)
         std::vector<Stmt *> stmts;
 
         while (peek().type != FI && !isAtEnd()) {
@@ -60,7 +62,6 @@ namespace goo {
 
         return new Conditional(column, line, stmts);
     }
-
 
     bool Parser::isAtEnd() const {
         return peek().type == EOF_;

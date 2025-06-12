@@ -13,7 +13,7 @@
 
 namespace goo {
     Interpreter::Interpreter(): tapePtr(0) {
-        tape = new char[TAPE_SIZE];
+        tape = new unsigned char[TAPE_SIZE];
         memset(tape, 0, TAPE_SIZE);
     }
 
@@ -26,22 +26,18 @@ namespace goo {
 
     void Interpreter::interpret(const std::vector<Stmt *>& statements) {
         for (const auto &stmt : statements) {
-            stmt->accept(this);
+            if (stmt != nullptr) {
+                stmt->accept(this);
+            }
         }
     }
 
     void Interpreter::visitIncrementByte(IncrementByte *stmt) {
         tape[tapePtr]++;
-        if (tape[tapePtr] < 0) {
-            tape[tapePtr] = 0;
-        }
     }
 
     void Interpreter::visitDecrementByte(DecrementByte *stmt) {
         tape[tapePtr]--;
-        if (tape[tapePtr] < 0) {
-            tape[tapePtr] = 127;
-        }
     }
 
     void Interpreter::visitIncrementPtr(IncrementPtr *stmt) {

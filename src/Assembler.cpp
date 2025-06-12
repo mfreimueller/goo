@@ -12,9 +12,9 @@ namespace goo {
             stmt->accept(this);
         }
 
-        // after executing all commands we want to finalize
-        // our asm code by adding the exit syscall
-
+        // After executing all commands we want to finalize our asm code by adding the exit syscall.
+        // This also prevents successive calls to ::execute from creating an inconsistent state, as this exit command
+        // kills the process.
         return builder.mov("rax", "60")
                 .x_or("rdi", "rdi")
                 .syscall()
@@ -87,18 +87,16 @@ namespace goo {
                 .newLine();
     }
 
-    /**
-     * Creates the base structure of a loop and recursively calls
-     * resolve for each statement. Because it is possible to have multiple
-     * conditionals, even recursively so, we track the number of loops
-     * and use it as a label.
-     *
-     * @param stmt
-     */
+    /// Creates the base structure of a loop and recursively calls
+    /// resolve for each statement. Because it is possible to have multiple
+    /// conditionals, even recursively so, we track the number of loops
+    /// and use it as a label.
     void Assembler::visitConditional(Conditional *stmt) {
         const auto loopLabel = std::format("loop{}", ++labelCounter);
         const auto exitLoopLabel = loopLabel + "Exit";
 
+        // As we need to perform the loop-condition check first, we add it before translating any of the children
+        // code.
         builder.newLine()
                 .label(loopLabel)
                 .comment(stmt->debugInfo())
@@ -115,6 +113,7 @@ namespace goo {
     }
 
     void Assembler::visitDebug(Debug *stmt) {
-        // TODO
+        // There is no practical way to implement the debug statement, in my opinion.
+        // To debug assembler code, it is better use gdb or similar debuggers.
     }
 }
