@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "Token.h"
+
 namespace goo {
     class IncrementByte;
     class DecrementByte;
@@ -34,8 +36,11 @@ namespace goo {
     public:
         const int column;
         const int line;
+        const TokenType type;
 
-        Stmt(const int column, const int line): column(column), line(line) {}
+        Stmt(const int column, const int line, const TokenType type): column(column), line(line), type(type) {
+        }
+
         virtual ~Stmt() = default;
 
         /// Guides a visitor to the correct function to process this statement. Each
@@ -75,7 +80,11 @@ namespace goo {
 
     class IncrementByte final : public Stmt {
     public:
-        IncrementByte(const int column, const int line): Stmt(column, line) {}
+        const int count;
+
+        IncrementByte(const int column, const int line,
+                      const int count = 1): Stmt(column, line, INC_BYTE), count(count) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitIncrementByte(this);
@@ -84,7 +93,11 @@ namespace goo {
 
     class DecrementByte final : public Stmt {
     public:
-        DecrementByte(const int column, const int line): Stmt(column, line) {}
+        const int count;
+
+        DecrementByte(const int column, const int line,
+                      const int count = 1): Stmt(column, line, DEC_BYTE), count(count) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitDecrementByte(this);
@@ -93,7 +106,11 @@ namespace goo {
 
     class IncrementPtr final : public Stmt {
     public:
-        IncrementPtr(const int column, const int line): Stmt(column, line) {}
+        const int count;
+
+        IncrementPtr(const int column, const int line, const int count = 1): Stmt(column, line, INC_PTR),
+                                                                             count(count) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitIncrementPtr(this);
@@ -102,7 +119,11 @@ namespace goo {
 
     class DecrementPtr final : public Stmt {
     public:
-        DecrementPtr(const int column, const int line): Stmt(column, line) {}
+        const int count;
+
+        DecrementPtr(const int column, const int line, const int count = 1): Stmt(column, line, DEC_PTR),
+                                                                             count(count) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitDecrementPtr(this);
@@ -113,7 +134,8 @@ namespace goo {
     public:
         std::vector<Stmt *> stmts;
 
-        explicit Conditional(const int column, const int line, const std::vector<Stmt *> &stmts): Stmt(column, line), stmts(stmts) {
+        explicit Conditional(const int column, const int line,
+                             const std::vector<Stmt *> &stmts): Stmt(column, line, IF), stmts(stmts) {
         }
 
         ~Conditional() override;
@@ -125,7 +147,8 @@ namespace goo {
 
     class Output final : public Stmt {
     public:
-        Output(const int column, const int line): Stmt(column, line) {}
+        Output(const int column, const int line): Stmt(column, line, OUT) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitOutput(this);
@@ -134,7 +157,8 @@ namespace goo {
 
     class Input final : public Stmt {
     public:
-        Input(const int column, const int line): Stmt(column, line) {}
+        Input(const int column, const int line): Stmt(column, line, IN) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitInput(this);
@@ -143,7 +167,8 @@ namespace goo {
 
     class Debug final : public Stmt {
     public:
-        Debug(const int column, const int line): Stmt(column, line) {}
+        Debug(const int column, const int line): Stmt(column, line, DEBUG) {
+        }
 
         void accept(Visitor *visitor) override {
             visitor->visitDebug(this);

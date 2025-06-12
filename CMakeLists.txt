@@ -27,6 +27,8 @@ add_executable(goo src/main.cpp
         src/Util.cpp
         src/Util.h
         src/Reporter.cpp
-        src/Reporter.h)
+        src/Reporter.h
+        src/Optimizer.cpp
+        src/Optimizer.h)
 
 target_link_libraries(goo PRIVATE CLI11::CLI11)

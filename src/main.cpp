@@ -10,6 +10,7 @@
 #include "Assembler.h"
 #include "Interpreter.h"
 #include "AsmBuilder.h"
+#include "Optimizer.h"
 #include "Util.h"
 
 using namespace goo;
@@ -62,6 +63,9 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
 
     std::string asmCode;
     if (!reporter.hasError()) {
+        Optimizer optimizer;
+        auto optimizedStmts = optimizer.run(stmts);
+
         AsmBuilder *builder = new StringAsmBuilder;
 
         Assembler assembler(*builder);
