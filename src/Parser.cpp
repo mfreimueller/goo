@@ -36,14 +36,14 @@ namespace goo {
             case FI:
                 // If we reach this case, we have a closing tag ] without any
                 // opening. This is treated as a syntax error.
-                // TODO: throw error?
+                reporter.error(token.line, token.column, "Unexpected closing tag ]");
                 break;
             case DEBUG:
                 return new Debug(token.column, token.line);
             default:
                 // At this point there should be no unknown token type. Having
-                // reached this point means the we encountered an error.
-                // TODO: throw error
+                // reached this point means that we encountered an error.
+                reporter.error(token.line, token.column, "Unexpected tag");
                 break;
         }
 

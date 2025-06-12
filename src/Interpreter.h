@@ -5,6 +5,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
+#include "Reporter.h"
 #include "Stmt.h"
 
 namespace goo {
@@ -30,13 +31,17 @@ namespace goo {
         unsigned char *tape;
         int tapePtr;
 
+        Reporter &reporter;
+
     public:
-        Interpreter();
+        explicit Interpreter(Reporter &reporter);
         ~Interpreter() override;
 
         /// Interprets a list of statements, modifying (if applicable) the internal type.
         /// This function returns no status code, but may set the warning or error flag.
         /// It is recommended to check both flags after execution to inform the user.
+        /// If during execution an error occurs, the execution stops, leaving the tape possibly
+        /// in an inconsistent state.
         /// @param statements A list of statements to interpret. Nullptr-entries are being ignored.
         void interpret(const std::vector<Stmt *> &statements);
 

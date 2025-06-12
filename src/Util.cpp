@@ -19,5 +19,25 @@ namespace goo {
         return std::regex_replace(s, std::regex("(^[ ]+)|([ ]+$)"),"");
     }
 
+    std::vector<std::string> splitIntoLines(const std::string &s) {
+        std::vector<std::string> lines;
+        std::stringstream ss(s);
+        std::string line;
+
+        while (std::getline(ss, line)) {
+            lines.push_back(line);
+        }
+
+        return lines;
+    }
+
+    std::string repeatString(const std::string& s, const int count) {
+        std::string repeated = s;
+        for (int idx = 1; idx < count; idx++) {
+            repeated += s;
+        }
+
+        return repeated;
+    }
 
 } // goo

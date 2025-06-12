@@ -6,6 +6,8 @@
 #define PARSER_H
 #include <utility>
 #include <vector>
+
+#include "Reporter.h"
 #include "Stmt.h"
 
 namespace goo {
@@ -22,8 +24,10 @@ namespace goo {
 
         int current = 0;
 
+        Reporter &reporter;
+
     public:
-        explicit Parser(std::vector<Token> tokens) : tokens(std::move(tokens)) {};
+        explicit Parser(std::vector<Token> tokens, Reporter &reporter) : tokens(std::move(tokens)), reporter(reporter) {};
 
         /// Parses the list of tokens provided in the constructor. Each token is transformed into a
         /// statement. In case of syntax errors the error flag is set and a new error message is being

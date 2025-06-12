@@ -7,12 +7,13 @@
 #include <cstring>
 #include <iostream>
 #include <ostream>
+#include <utility>
 #include <unistd.h>
 
 #define TAPE_SIZE 30000
 
 namespace goo {
-    Interpreter::Interpreter(): tapePtr(0) {
+    Interpreter::Interpreter(Reporter &reporter): tapePtr(0), reporter(reporter) {
         tape = new unsigned char[TAPE_SIZE];
         memset(tape, 0, TAPE_SIZE);
     }
@@ -28,6 +29,8 @@ namespace goo {
         for (const auto &stmt : statements) {
             if (stmt != nullptr) {
                 stmt->accept(this);
+
+                if (reporter.hasError()) break;
             }
         }
     }
@@ -44,7 +47,8 @@ namespace goo {
         tapePtr++;
 
         if (tapePtr >= TAPE_SIZE) {
-            std::cerr << "tape ptr reset to 0 (overflow)" << std::endl;
+            reporter.warning(stmt->line, stmt->column,
+                "Attempted to move the tape pointer beyond the bounds of 30,000. Reset to 0.");
             tapePtr = 0;
         }
     }
@@ -53,7 +57,8 @@ namespace goo {
         tapePtr--;
 
         if (tapePtr < 0) {
-            std::cerr << "tape ptr reset to 29999 (underflow)" << std::endl;
+            reporter.warning(stmt->line, stmt->column,
+                "Attempted to move the tape pointer below 0. Reset to 29,999.");
             tapePtr = TAPE_SIZE - 1;
         }
     }
@@ -61,7 +66,8 @@ namespace goo {
     void Interpreter::visitInput(Input *stmt) {
         char buffer[1];
         if (read(STDIN_FILENO, buffer, 1) == -1) {
-            // TODO: handle error
+            reporter.error(stmt->line, stmt->column,
+                "Failed to read user input.");
         }
 
         tape[tapePtr] = buffer[0];
@@ -72,7 +78,7 @@ namespace goo {
     }
 
     void Interpreter::visitConditional(Conditional *stmt) {
-        while (tape[tapePtr] != 0) {
+        while (tape[tapePtr] != 0 && !reporter.hasError()) {
             interpret(stmt->stmts);
         }
     }

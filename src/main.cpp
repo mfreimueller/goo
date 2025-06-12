@@ -17,7 +17,8 @@ namespace fs = std::filesystem;
 
 int runFile(const std::string &inputFile, const std::string &outputFile, bool printAsmCode);
 void runPrompt();
-std::vector<Stmt *> transform(const std::string& source);
+std::vector<Stmt *> transform(const std::string& source, Reporter reporter);
+int compileAsmCode(std::string &code, const std::string &outputFile);
 
 int main(const int argc, char **argv) {
     CLI::App app{ "goo is a lightweight compiler for the programming language brainfuck, which create Linux-native ELF-binaries.", "goo" };
@@ -50,44 +51,34 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
     auto ifs = std::ifstream(inputFile);
     const auto fileContent = std::string(std::istreambuf_iterator{ifs}, {});
 
-    auto stmts = transform(fileContent);
+    Reporter reporter;
+    reporter.setCode(fileContent);
 
-    AsmBuilder *builder = new StringAsmBuilder;
+    auto stmts = transform(fileContent, reporter);
 
-    Assembler assembler(*builder);
-    const auto asmCode = assembler.execute(stmts);
+    std::string asmCode;
+    if (!reporter.hasError()) {
+        AsmBuilder *builder = new StringAsmBuilder;
+
+        Assembler assembler(*builder);
+        asmCode = assembler.execute(stmts);
+    }
 
     for (const auto stmt : stmts) {
         delete stmt;
     }
 
+    reporter.print();
+
+    // Cancel further execution in case of errors, while ignoring warnings.
+    if (reporter.hasError()) {
+        return 1;
+    }
+
     if (printAsmCode) {
         std::cout << asmCode << std::endl;
     } else {
-        fs::path tmpDir = fs::temp_directory_path();
-        fs::path tmpFile = tmpDir / fs::path("bf_tmpXXXXXX.asm");
-
-        std::string tmpPath = tmpFile.string();
-        int fd = mkstemps(tmpPath.data(), 4);
-        if (fd == -1) {
-            std::cerr << "Failed to create temporary file: " << tmpPath.data() << std::endl;
-            return 1;
-        }
-
-        close(fd);
-
-        std::ofstream out(tmpPath);
-        out << asmCode;
-        out.close();
-
-        std::string cmd = "nasm -f elf64 " + tmpPath + " -o " + outputFile;
-        if (int result = system(cmd.c_str()); result != 0) {
-            std::cerr << "Failed to execute command: " << cmd << std::endl;
-            return 1;
-        }
-
-        std::cout << "Created object file " << outputFile << std::endl;
-        fs::remove(tmpFile);
+        return compileAsmCode(asmCode, outputFile);
     }
 
     return 0;
@@ -98,7 +89,8 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
 ///
 /// To exit REPL mode, the user must either enter `exit` (case-insensitive) or press `Ctrl-D`.
 void runPrompt() {
-    Interpreter interpreter;
+    Reporter reporter;
+    auto interpreter = Interpreter(reporter);
     std::string line;
 
     while (true) {
@@ -110,13 +102,22 @@ void runPrompt() {
             break;
         }
 
-        line = stripWhitespace(line);
-        if (compareStringsCaseInsensitive(line, "exit")) {
+        if (const auto strippedLine = stripWhitespace(line); compareStringsCaseInsensitive(strippedLine, "exit")) {
             break;
         }
 
-        auto stmts = transform(line);
-        interpreter.interpret(stmts);
+        reporter.setCode(line);
+
+        auto stmts = transform(line, reporter);
+
+        // We treat errors as show-stoppers and only interpret lines if no errors occurred.
+        // Warnings we report afterward, if any occurred.
+        if (!reporter.hasError()) {
+            interpreter.interpret(stmts);
+        }
+
+        reporter.print();
+        reporter.reset();
 
         for (const auto stmt : stmts) {
             delete stmt;
@@ -129,11 +130,49 @@ void runPrompt() {
 /// Transforms brainfuck code into a list of statements which can be further processed.
 ///
 /// @param source A string containing brainfuck code. This can either be a single command, a line or a whole script.
+/// @param reporter A reporter that tracks any syntactical errors and warnings, to be reported to the user afterward.
 /// @return A list of translated statements which can be interpreted or compiled.
-std::vector<Stmt *> transform(const std::string& source) {
+std::vector<Stmt *> transform(const std::string& source, Reporter reporter) {
     Scanner scanner(source);
     const auto tokens = scanner.scanTokens();
 
-    Parser parser(tokens);
+    Parser parser(tokens, reporter);
     return parser.parse();
+}
+
+/// Compiles assembler code into an ELF-object file, by first writing the code into a temporary file and then
+/// invoking `nasm` to compile the file. Note, that this function doesn't verify that `nasm` is actually installed
+/// on the users computer, as this is listed in the requirements in the README file.
+/// @param code The assembler code to compile.
+/// @param outputFile The path of the output file containing the ELF-object file.
+/// @return A status code corresponding to [https://tldp.org/LDP/abs/html/exitcodes.html].
+int compileAsmCode(std::string &code, const std::string &outputFile) {
+    fs::path tmpDir = fs::temp_directory_path();
+
+    // We need to add the XXXXXX to the filepath, because mkstemps replaces this with random characters.
+    fs::path tmpFile = tmpDir / fs::path("bf_tmpXXXXXX.asm");
+
+    std::string tmpPath = tmpFile.string();
+    int fd = mkstemps(tmpPath.data(), 4);
+    if (fd == -1) {
+        std::cerr << "Failed to create temporary file: " << tmpPath.data() << std::endl;
+        return 1;
+    }
+
+    close(fd);
+
+    std::ofstream out(tmpPath);
+    out << code;
+    out.close();
+
+    std::string cmd = "nasm -f elf64 " + tmpPath + " -o " + outputFile;
+    if (int result = system(cmd.c_str()); result != 0) {
+        std::cerr << "Failed to execute command: " << cmd << std::endl;
+        return 1;
+    }
+
+    std::cout << "Created object file " << outputFile << std::endl;
+    fs::remove(tmpFile);
+
+    return 0;
 }

@@ -25,6 +25,8 @@ add_executable(goo src/main.cpp
         src/AsmBuilder.cpp
         src/AsmBuilder.h
         src/Util.cpp
-        src/Util.h)
+        src/Util.h
+        src/Reporter.cpp
+        src/Reporter.h)
 
 target_link_libraries(goo PRIVATE CLI11::CLI11)
