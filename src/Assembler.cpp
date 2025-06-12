@@ -26,47 +26,111 @@ namespace goo {
     void Assembler::visitIncrementByte(IncrementByte *stmt) {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
-        builder.add("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "0")
-                .jge(incGuard)
-                .mov("byte [tape + rbx]", "0")
-                .label(incGuard);
+        if (stmt->count == 1) {
+            builder.add("byte [tape + rbx]", "1")
+                    .comment(stmt->debugInfo())
+                    .cmp("byte [tape + rbx]", "0")
+                    .jge(incGuard)
+                    .mov("byte [tape + rbx]", "0");
+        } else {
+            // We simply add [tape + rbx] + moves. In case of an overflow we wrap around and end up with a negative
+            // number. Then we simply add 127 to make the number positive again.
+            builder.add("byte [tape + rbx]", std::to_string(stmt->count))
+                    .cmp("byte [tape + rbx]", "0")
+                    .jge(incGuard);
+
+            // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
+            builder.add("rbx", "127");
+        }
+
+        builder.label(incGuard);
     }
 
     void Assembler::visitDecrementByte(DecrementByte *stmt) {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
 
-        builder.sub("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "0")
-                .jge(decGuard)
-                .mov("byte [tape + rbx]", "127")
-                .label(decGuard);
+        if (stmt->count == 1) {
+            builder.sub("byte [tape + rbx]", "1")
+                    .comment(stmt->debugInfo())
+                    .cmp("byte [tape + rbx]", "0")
+                    .jge(decGuard)
+                    .mov("byte [tape + rbx]", "127");
+        } else {
+            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
+            // subtract rbx-moves. Otherwise, we calculate 127 - (moves-rbx) and store this in rbx.
+            const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
+
+            builder.mov("r8b", std::to_string(stmt->count))
+                    .cmp("r8b", "byte [tape + rbx]")
+                    .jle(underflowGuard);
+
+            // Now rdx is larger. Therefor we subtract rbx from rdx, write 127 into rbx and subtract rdx from rbx.
+            builder.sub("r8b", "byte [tape + rbx]")
+                    .mov("byte [tape + rbx]", "127")
+                    .label(underflowGuard);
+
+            // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
+            builder.sub("byte [tape + rbx]", "r8b");
+        }
+
+        builder.label(decGuard);
     }
 
     void Assembler::visitIncrementPtr(IncrementPtr *stmt) {
-        const auto ptrGuard = std::format("ptrGuard{}", ++labelCounter);
+        const auto labelCounter = ++this->labelCounter;
+        const auto ptrGuard = std::format("ptrGuard{}", labelCounter);
 
-        // as our tape is 30.000 bytes long, we need
-        // a guard to jump back to 0 in case of overflow
-        builder.add("rbx", "1")
-                .comment(stmt->debugInfo())
-                .cmp("rbx", "29999")
-                .jle(ptrGuard)
-                .mov("rbx", "0")
-                .label(ptrGuard);
+        if (stmt->count == 1) {
+            // as our tape is 30.000 bytes long, we need
+            // a guard to jump back to 0 in case of overflow
+            builder.add("rbx", "1")
+                    .comment(stmt->debugInfo())
+                    .cmp("rbx", "29999")
+                    .jle(ptrGuard)
+                    .mov("rbx", "0");
+        } else {
+            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
+            // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
+
+            builder.add("rbx", std::to_string(stmt->count))
+                    .cmp("rbx", "29999")
+                    .jle(ptrGuard);
+
+            // Now rbx is larger than 29,999. Therefor we subtract 29,999 from rbx.
+            builder.sub("rbx", "29999");
+        }
+
+        builder.label(ptrGuard);
     }
 
     void Assembler::visitDecrementPtr(DecrementPtr *stmt) {
         const auto ptrGuard = std::format("ptrGuard{}", ++labelCounter);
 
-        builder.sub("rbx", "1")
-                .comment(stmt->debugInfo())
-                .cmp("rbx", "0")
-                .jge(ptrGuard)
-                .mov("rbx", "29999")
-                .label(ptrGuard);
+        if (stmt->count == 1) {
+            builder.sub("rbx", "1")
+                    .comment(stmt->debugInfo())
+                    .cmp("rbx", "0")
+                    .jge(ptrGuard)
+                    .mov("rbx", "29999");
+        } else {
+            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
+            // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
+            const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
+
+            builder.mov("rdx", std::to_string(stmt->count))
+                    .cmp("rdx", "rbx")
+                    .jle(underflowGuard);
+
+            // Now rdx is larger. Therefor we subtract rbx from rdx, write 29,999 into rbx and subtract rdx from rbx.
+            builder.sub("rdx", "rbx")
+                    .mov("rbx", "29999")
+                    .label(underflowGuard);
+
+            // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
+            builder.sub("rbx", "rdx");
+        }
+
+        builder.label(ptrGuard);
     }
 
     void Assembler::visitInput(Input *stmt) {
