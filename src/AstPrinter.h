@@ -6,7 +6,7 @@
 #define ASTPRINTER_H
 #include "Stmt.h"
 
-namespace brainlove {
+namespace goo {
 
 class AstPrinter final : public Visitor {
     int level = 0;
@@ -34,6 +34,6 @@ private:
     void printLevel() const;
 };
 
-} // brainlove
+} // goo
 
 #endif //ASTPRINTER_H

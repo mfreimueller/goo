@@ -4,9 +4,9 @@
 
 #include "Parser.h"
 
-#include "../Token.h"
+#include "Token.h"
 
-namespace brainlove {
+namespace goo {
 
     std::vector<Stmt *> Parser::parse() {
         std::vector<Stmt *> stmts;
@@ -70,4 +70,4 @@ namespace brainlove {
         return this->tokens[current];
     }
 
-} // brainlove
+} // goo

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <ostream>
 
-namespace brainlove {
+namespace goo {
     void AstPrinter::print(const std::vector<Stmt *>& statements) {
         for (auto& stmt : statements) {
             stmt->accept(this);
@@ -65,4 +65,4 @@ namespace brainlove {
         }
     }
 
-} // brainlove
+} // goo

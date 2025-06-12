@@ -1,22 +1,30 @@
 cmake_minimum_required(VERSION 3.31)
-project(brainlove)
+project(goo)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(brainlove main.cpp
-        Scanner.cpp
-        Scanner.h
-        Token.cpp
-        Token.h
-        Parser.cpp
-        Parser.h
-        Stmt.cpp
-        Stmt.h
-        Assembler.cpp
-        Assembler.h
-        Interpreter.cpp
-        Interpreter.h
-        AstPrinter.cpp
-        AstPrinter.h
-        AsmBuilder.cpp
-        AsmBuilder.h)
+find_package(CLI11 CONFIG REQUIRED)
+
+include_directories(src)
+
+add_executable(goo src/main.cpp
+        src/Scanner.cpp
+        src/Scanner.h
+        src/Token.cpp
+        src/Token.h
+        src/Parser.cpp
+        src/Parser.h
+        src/Stmt.cpp
+        src/Stmt.h
+        src/Assembler.cpp
+        src/Assembler.h
+        src/Interpreter.cpp
+        src/Interpreter.h
+        src/AstPrinter.cpp
+        src/AstPrinter.h
+        src/AsmBuilder.cpp
+        src/AsmBuilder.h
+        src/Util.cpp
+        src/Util.h)
+
+target_link_libraries(goo PRIVATE CLI11::CLI11)

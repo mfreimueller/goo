@@ -4,7 +4,7 @@
 
 #include "Stmt.h"
 
-namespace brainlove {
+namespace goo {
 
     Conditional::~Conditional() {
         for (const auto it : stmts) {
@@ -14,4 +14,4 @@ namespace brainlove {
     }
 
 
-} // brainlove
+} // goo

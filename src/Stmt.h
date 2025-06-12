@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace brainlove {
+namespace goo {
     class IncrementByte;
     class DecrementByte;
     class IncrementPtr;
@@ -131,6 +131,6 @@ namespace brainlove {
             visitor->visitDebug(this);
         }
     };
-} // brainlove
+} // goo
 
 #endif //STMT_H

@@ -6,10 +6,10 @@
 #define ASSEMBLER_H
 
 #include <string>
-#include "../Stmt.h"
+#include "Stmt.h"
 #include "AsmBuilder.h"
 
-namespace brainlove {
+namespace goo {
     /**
      * A visitor to statements that produces assembler code
      */

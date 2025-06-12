@@ -4,7 +4,7 @@
 
 #include "Token.h"
 
-namespace brainlove {
+namespace goo {
 
     std::string Token::toString() const {
         std::string lexeme;
@@ -45,4 +45,4 @@ namespace brainlove {
         return lexeme + " " + std::to_string(column) + ":" + std::to_string(line);
     }
 
-} // brainlove
+} // goo

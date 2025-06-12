@@ -4,7 +4,7 @@
 
 #include "Scanner.h"
 
-namespace brainlove {
+namespace goo {
     std::vector<Token> Scanner::scanTokens() {
         while (!isAtEnd()) {
             scanToken();
@@ -53,4 +53,4 @@ namespace brainlove {
     void Scanner::addToken(TokenType type) {
         tokens.emplace_back(type, line, column);
     }
-} // brainlove
+} // goo

@@ -10,7 +10,7 @@
 
 #include "Token.h"
 
-namespace brainlove {
+namespace goo {
     class Scanner {
         const std::string &source;
         std::vector<Token> tokens;
@@ -34,6 +34,6 @@ namespace brainlove {
 
         void addToken(TokenType type);
     };
-} // brainlove
+} // goo
 
 #endif //SCANNER_H

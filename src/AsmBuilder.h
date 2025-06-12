@@ -6,7 +6,7 @@
 #define ASMBUILDER_H
 #include <string>
 
-namespace brainlove {
+namespace goo {
     /**
      * A builder class that abstracts away the syntax and formatting of
      * assembler code. Each method translates directly to its assembler
@@ -104,6 +104,6 @@ namespace brainlove {
     };
 
 
-} // brainlove
+} // goo
 
 #endif //ASMBUILDER_H

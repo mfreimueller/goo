@@ -7,7 +7,7 @@
 
 #include "Stmt.h"
 
-namespace brainlove {
+namespace goo {
 
 class Interpreter final : public Visitor {
     char *tape;
@@ -37,6 +37,6 @@ private:
     void visitDebug(Debug *stmt) override;
 };
 
-} // brainlove
+} // goo
 
 #endif //INTERPRETER_H

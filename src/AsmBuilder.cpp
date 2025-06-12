@@ -6,7 +6,7 @@
 
 #include <format>
 
-namespace brainlove {
+namespace goo {
     StringAsmBuilder::StringAsmBuilder() {
         code = "bits 64\n\n";
         code += "section .bss\n\n";
@@ -93,4 +93,4 @@ namespace brainlove {
         code += "\n";
         return *this;
     }
-} // brainlove
+} // goo

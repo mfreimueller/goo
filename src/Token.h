@@ -6,7 +6,7 @@
 #define TOKEN_H
 #include <string>
 
-namespace brainlove {
+namespace goo {
 
 enum TokenType {
     INC_BYTE, DEC_BYTE, INC_PTR, DEC_PTR, OUT, IN, IF, FI, DEBUG, EOF_
@@ -28,6 +28,6 @@ Token(const TokenType type, const int line, const int column)
     [[nodiscard]] std::string toString() const;
 };
 
-} // brainlove
+} // goo
 
 #endif //TOKEN_H

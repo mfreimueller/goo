@@ -11,7 +11,7 @@
 
 #define TAPE_SIZE 30000
 
-namespace brainlove {
+namespace goo {
     Interpreter::Interpreter(): tapePtr(0) {
         tape = new char[TAPE_SIZE];
         memset(tape, 0, TAPE_SIZE);
@@ -94,4 +94,4 @@ namespace brainlove {
     }
 
 
-} // brainlove
+} // goo

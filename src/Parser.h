@@ -8,7 +8,7 @@
 #include <vector>
 #include "Stmt.h"
 
-namespace brainlove {
+namespace goo {
     class Token;
 
     class Parser {
@@ -29,6 +29,6 @@ namespace brainlove {
         [[nodiscard]] bool isAtEnd() const;
         [[nodiscard]] Token peek() const;
     };
-} // brainlove
+} // goo
 
 #endif //PARSER_H

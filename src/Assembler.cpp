@@ -2,11 +2,11 @@
 // Created by michael on 10.06.25.
 //
 
-#include "../Assembler.h"
+#include "Assembler.h"
 
 #include <format>
 
-namespace brainlove {
+namespace goo {
     std::string Assembler::execute(const std::vector<Stmt *> &statements) {
         for (auto &stmt: statements) {
             stmt->accept(this);
