@@ -49,8 +49,9 @@ int main(const int argc, char **argv) {
 /// @param inputFile The path to a file to read and translate/compile.
 /// @param outputFile The path to a file to write the compiled ELF-object file to. This argument is ignored when `printAsmCode` is true.
 /// @param printAsmCode True if the translated assembler code is to be written to standard out, otherwise the ELF-object file is created.
+/// @param debugBuild True if debug symbols should be included in the output file.
 /// @return A status code according to [https://tldp.org/LDP/abs/html/exitcodes.html]
-int runFile(const std::string& inputFile, const std::string &outputFile, bool printAsmCode) {
+int runFile(const std::string& inputFile, const std::string &outputFile, bool printAsmCode, bool debugBuild) {
     auto ifs = std::ifstream(inputFile);
     const auto fileContent = std::string(std::istreambuf_iterator{ifs}, {});
 
