@@ -63,7 +63,7 @@ namespace goo {
 
         builder.sub("rbx", "1")
                 .comment(stmt->debugInfo())
-                .cmp("rbx", "30000")
+                .cmp("rbx", "0")
                 .jge(ptrGuard)
                 .mov("rbx", "29999")
                 .label(ptrGuard);
