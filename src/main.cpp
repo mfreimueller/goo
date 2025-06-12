@@ -54,7 +54,7 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
     auto ifs = std::ifstream(inputFile);
     const auto fileContent = std::string(std::istreambuf_iterator{ifs}, {});
 
-    Reporter reporter;
+    auto reporter = Reporter(inputFile);
     reporter.setCode(fileContent);
 
     auto stmts = transform(fileContent, reporter);
