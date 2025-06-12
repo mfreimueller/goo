@@ -27,22 +27,22 @@ namespace goo {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
         builder.add("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo());
-                // .cmp("byte [tape + rbx]", "0")
-                // .jge(incGuard)
-                // .mov("byte [tape + rbx]", "0")
-                // .label(incGuard);
+                .comment(stmt->debugInfo())
+                .cmp("byte [tape + rbx]", "0")
+                .jge(incGuard)
+                .mov("byte [tape + rbx]", "0")
+                .label(incGuard);
     }
 
     void Assembler::visitDecrementByte(DecrementByte *stmt) {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
 
         builder.sub("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo());
-                // .cmp("byte [tape + rbx]", "0")
-                // .jge(decGuard)
-                // .mov("byte [tape + rbx]", "127")
-                // .label(decGuard);
+                .comment(stmt->debugInfo())
+                .cmp("byte [tape + rbx]", "0")
+                .jge(decGuard)
+                .mov("byte [tape + rbx]", "127")
+                .label(decGuard);
     }
 
     void Assembler::visitIncrementPtr(IncrementPtr *stmt) {
