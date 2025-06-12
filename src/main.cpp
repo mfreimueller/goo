@@ -15,16 +15,19 @@
 using namespace goo;
 namespace fs = std::filesystem;
 
-int runFile(const std::string &inputFile, const std::string &outputFile, bool printAsmCode);
+int runFile(const std::string &inputFile, const std::string &outputFile, bool printAsmCode, bool debugBuild);
 void runPrompt();
-std::vector<Stmt *> transform(const std::string& source, Reporter reporter);
-int compileAsmCode(std::string &code, const std::string &outputFile);
+std::vector<Stmt *> transform(const std::string& source, Reporter &reporter);
+int compileAsmCode(std::string &code, const std::string &outputFile, bool debugBuild);
 
 int main(const int argc, char **argv) {
     CLI::App app{ "goo is a lightweight compiler for the programming language brainfuck, which create Linux-native ELF-binaries.", "goo" };
 
     bool printAsmCode = false;
     app.add_flag("-s", printAsmCode, "Print the translated assembler code instead of producing an object file. This only produces an output if an input file is provided.");
+
+    bool debugBuild = false;
+    app.add_flag("-d", debugBuild, "Enable the debug build, which includes debug information and symbols in the output file.");
 
     std::string outputFile = "out.o";
     app.add_option("-o,--output", outputFile, "Path to a file that contains either ELF code or assembler code.");
@@ -33,7 +36,7 @@ int main(const int argc, char **argv) {
     CLI11_PARSE(app, argc, argv);
 
     if (const auto remainingArgs = app.remaining(); !remainingArgs.empty()) {
-        return runFile(remainingArgs.at(0), outputFile, printAsmCode);
+        return runFile(remainingArgs.at(0), outputFile, printAsmCode, debugBuild);
     }
 
     runPrompt();
@@ -78,7 +81,7 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
     if (printAsmCode) {
         std::cout << asmCode << std::endl;
     } else {
-        return compileAsmCode(asmCode, outputFile);
+        return compileAsmCode(asmCode, outputFile, debugBuild);
     }
 
     return 0;
@@ -132,7 +135,7 @@ void runPrompt() {
 /// @param source A string containing brainfuck code. This can either be a single command, a line or a whole script.
 /// @param reporter A reporter that tracks any syntactical errors and warnings, to be reported to the user afterward.
 /// @return A list of translated statements which can be interpreted or compiled.
-std::vector<Stmt *> transform(const std::string& source, Reporter reporter) {
+std::vector<Stmt *> transform(const std::string& source, Reporter &reporter) {
     Scanner scanner(source);
     const auto tokens = scanner.scanTokens();
 
@@ -145,8 +148,9 @@ std::vector<Stmt *> transform(const std::string& source, Reporter reporter) {
 /// on the users computer, as this is listed in the requirements in the README file.
 /// @param code The assembler code to compile.
 /// @param outputFile The path of the output file containing the ELF-object file.
+/// @param debugBuild True if debug symbols should be included in the output file.
 /// @return A status code corresponding to [https://tldp.org/LDP/abs/html/exitcodes.html].
-int compileAsmCode(std::string &code, const std::string &outputFile) {
+int compileAsmCode(std::string &code, const std::string &outputFile, bool debugBuild) {
     fs::path tmpDir = fs::temp_directory_path();
 
     // We need to add the XXXXXX to the filepath, because mkstemps replaces this with random characters.
@@ -165,7 +169,16 @@ int compileAsmCode(std::string &code, const std::string &outputFile) {
     out << code;
     out.close();
 
-    std::string cmd = "nasm -f elf64 " + tmpPath + " -o " + outputFile;
+    std::string cmd;
+
+    if (debugBuild) {
+        cmd = "nasm -f elf64 -g -F dwarf " + tmpPath + " -o " + outputFile;
+    } else {
+        cmd = "nasm -f elf64 " + tmpPath + " -o " + outputFile;
+    }
+
+    std::cout << cmd << std::endl;
+
     if (int result = system(cmd.c_str()); result != 0) {
         std::cerr << "Failed to execute command: " << cmd << std::endl;
         return 1;
