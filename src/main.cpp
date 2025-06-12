@@ -64,7 +64,7 @@ int runFile(const std::string& inputFile, const std::string &outputFile, bool pr
     std::string asmCode;
     if (!reporter.hasError()) {
         Optimizer optimizer;
-        auto optimizedStmts = optimizer.run(stmts);
+        stmts = optimizer.run(stmts);
 
         AsmBuilder *builder = new StringAsmBuilder;
 
