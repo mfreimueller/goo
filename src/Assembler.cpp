@@ -9,7 +9,9 @@
 namespace goo {
     std::string Assembler::execute(const std::vector<Stmt *> &statements) {
         for (auto &stmt: statements) {
-            stmt->accept(this);
+            if (stmt != nullptr) {
+                stmt->accept(this);
+            }
         }
 
         // After executing all commands we want to finalize our asm code by adding the exit syscall.
