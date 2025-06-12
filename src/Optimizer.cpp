@@ -12,6 +12,16 @@ namespace goo {
         for (int idx = 0; idx < stmts.size(); idx++) {
             if (auto stmt = stmts[idx]; stmt->type < OUT) {
                 groupStmts(idx, stmts, optimizedStmts);
+            } else if (stmt->type == IF) {
+                const auto conditional = dynamic_cast<Conditional *>(stmt);
+                auto newStmts = run(conditional->stmts);
+
+                optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
+
+                // We have to manually clear the statements here because they have already been deleted in the
+                // recursive call of ::run()
+                conditional->stmts.clear();
+                delete conditional;
             } else {
                 optimizedStmts.push_back(stmt);
             }
@@ -60,7 +70,6 @@ namespace goo {
             } else {
                 optimized_stmts.push_back(new IncrementPtr(line, column, moves));
             }
-
         } else if (moves < 0) {
             // As we have negative moves, we must negate them to have the positive value
             moves = -moves;
