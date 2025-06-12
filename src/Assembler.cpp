@@ -2,7 +2,7 @@
 // Created by michael on 10.06.25.
 //
 
-#include "Assembler.h"
+#include "../Assembler.h"
 
 #include <format>
 
@@ -25,22 +25,22 @@ namespace brainlove {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
         builder.add("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "0")
-                .jge(incGuard)
-                .mov("byte [tape + rbx]", "0")
-                .label(incGuard);
+                .comment(stmt->debugInfo());
+                // .cmp("byte [tape + rbx]", "0")
+                // .jge(incGuard)
+                // .mov("byte [tape + rbx]", "0")
+                // .label(incGuard);
     }
 
     void Assembler::visitDecrementByte(DecrementByte *stmt) {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
 
         builder.sub("byte [tape + rbx]", "1")
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "0")
-                .jge(decGuard)
-                .mov("byte [tape + rbx]", "127")
-                .label(decGuard);
+                .comment(stmt->debugInfo());
+                // .cmp("byte [tape + rbx]", "0")
+                // .jge(decGuard)
+                // .mov("byte [tape + rbx]", "127")
+                // .label(decGuard);
     }
 
     void Assembler::visitIncrementPtr(IncrementPtr *stmt) {
@@ -61,7 +61,7 @@ namespace brainlove {
 
         builder.sub("rbx", "1")
                 .comment(stmt->debugInfo())
-                .cmp("rbx", "0")
+                .cmp("rbx", "30000")
                 .jge(ptrGuard)
                 .mov("rbx", "29999")
                 .label(ptrGuard);

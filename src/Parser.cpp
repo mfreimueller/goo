@@ -4,7 +4,7 @@
 
 #include "Parser.h"
 
-#include "Token.h"
+#include "../Token.h"
 
 namespace brainlove {
 

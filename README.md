@@ -31,11 +31,61 @@ cd goo
 mkdir build && cd build
 cmake ..
 make
+```
 
-## Roadmap
+## Usage
 
-- Optimizations: Although the costs of execution of the
-    commands produced by a brainf*ck program should be minimal,
-    for educational purposes I intend to introduce some optimizations,
-    for example grouping of statements, such as ADD or SUB.
-- Remove redundant checks 
+### Compilation of a brainfuck script
+
+```bash
+./goo -o hello.o hello.bf
+```
+
+This creates an ELF-compatible object-file `hello.o` that you can link using `ld`:
+
+```bash
+ld hello.o -o hello
+./hello
+```
+
+### Print assembler code
+
+```bash
+./goo -s hello.bf
+```
+
+This returns the generated x86_64-NASM-code for the script `hello.bf`.
+
+### Interactive REPL
+
+```bash
+./goo
+```
+
+This launches an interactive REPL for brainfuck. Enter `exit` or use `Ctrl+D` to exit.
+
+## Project structure
+
+```bash
+.
+├── CMakeLists.txt         # build definition
+├── src/                   # source code for goo
+│   ├── main.cpp
+│   ├── compiler/
+│   └── ...
+└── examples/              # example scripts in brainfuck
+```
+
+## TODO
+
+- Optimization of commands such as [->+<]
+- Support for more platforms
+- Improve REPL mode to support multiline inputs (for example, if a conditional is opened by not closed)
+
+## License
+
+This project is licensed under the MIT-license - see [LICENSE](LICENSE) for details.
+
+## Contribution
+
+Pull requests are welcome! For larger changes it'd be preferred to open an issues first.

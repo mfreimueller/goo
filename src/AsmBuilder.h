@@ -7,11 +7,27 @@
 #include <string>
 
 namespace brainlove {
+    /**
+     * A builder class that abstracts away the syntax and formatting of
+     * assembler code. Each method translates directly to its assembler
+     * counterpart. To enhance readability, each regular method (exception
+     * ::build()) returns the reference to AsmBuilder, to allow for
+     * method chaining:
+     *
+     * builder.mov("rax", "rbx").add("edi", 2);
+     *
+     * Note, that it is not possible to provide meta information about
+     * parameters, for example to signal that we want to perform a bytewise
+     * operation on src, we must supply "byte [tape + rbx]" as src-argument.
+     */
     class AsmBuilder {
     public:
         virtual ~AsmBuilder() = default;
 
-        virtual std::string build() const = 0;
+        /**
+         * @return The complete assembler code produced by the builder.
+         */
+        [[nodiscard]] virtual std::string build() const = 0;
 
         virtual AsmBuilder &mov(std::string dest, std::string src) = 0;
 
@@ -37,11 +53,20 @@ namespace brainlove {
 
         virtual AsmBuilder &jge(std::string label) = 0;
 
+        /**
+         * @param comment A comment that is appended to the current line separated by a semicolon.
+         */
         virtual AsmBuilder &comment(std::string comment) = 0;
 
         virtual AsmBuilder &newLine() = 0;
     };
 
+    /**
+     * A concrete implementation of AsmBuilder that internally concatenates strings.
+     * The constructor already produces a boilerplate of assembler code, by providing
+     * a tape of 30,000 byte size, as well as defining the _start label and clearing
+     * rbx.
+     */
     class StringAsmBuilder final : public AsmBuilder {
         std::string code;
     public:
