@@ -122,7 +122,7 @@ void runPrompt() {
             delete stmt;
         }
 
-        std::cout << std::flush;
+        std::cout << std::endl;
     }
 }
 
