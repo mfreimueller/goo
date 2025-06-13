@@ -19,6 +19,8 @@ namespace goo {
     class Output;
     class Input;
     class Debug;
+    class Reset;
+    class Transfer;
 
     class Visitor;
 
@@ -84,6 +86,10 @@ namespace goo {
         virtual void visitInput(Input *stmt) = 0;
 
         virtual void visitDebug(Debug *stmt) = 0;
+
+        virtual void visitReset(Reset *stmt) = 0;
+
+        virtual void visitTransfer(Transfer *stmt) = 0;
     };
 
     class IncrementByte final : public Stmt {
@@ -184,6 +190,40 @@ namespace goo {
 
         void accept(Visitor *visitor) override {
             visitor->visitDebug(this);
+        }
+    };
+
+    /// A reset statement is an optimized version of a [-] statement which resets a byte back to 0. The reset statement
+    /// therefor performs this operation with one assignment, instead of a loop. The reset can take place at the
+    /// location of the tape pointer (tapePtrOffset = 0), or relative to it (tapePtrOffset != 0).
+    class Reset final : public Stmt {
+    public:
+        const int initialValue;
+        const int tapePtrOffset;
+
+        Reset(const int column, const int line, const int initialValue, const int tapePtrOffset): Stmt(column, line,
+                NONE), initialValue(initialValue), tapePtrOffset(tapePtrOffset) {
+        }
+
+        void accept(Visitor *visitor) override {
+            visitor->visitReset(this);
+        }
+    };
+
+    /// A statement that transfers a value from one byte of the tape to another. The transfer can be a simple 1:1 one
+    /// ( [>+<-] ) or more complex, such as [>++<-] or [>+<--] etc. The add/subOffset inform processing compiler phases
+    /// about where to write the bytes to and where to read them from.
+    class Transfer final : public Stmt {
+    public:
+        const int addOffset;
+        const int subOffset;
+
+        Transfer(const int column, const int line, const int addOffset, const int subOffset): Stmt(column, line,
+                NONE), addOffset(addOffset), subOffset(subOffset) {
+        }
+
+        void accept(Visitor *visitor) override {
+            visitor->visitTransfer(this);
         }
     };
 } // goo
