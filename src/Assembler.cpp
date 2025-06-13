@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 namespace goo {
 
-    std::shared_ptr<Payload> Assembler::run(std::shared_ptr<Payload> payload) {
+    std::shared_ptr<Payload> Assembler::run(const std::shared_ptr<Payload> payload) {
         const auto stringPayload = std::static_pointer_cast<StringPayload>(payload);
 
         std::string tmpPath;
