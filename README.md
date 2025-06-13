@@ -1,6 +1,6 @@
 # goo — A Brainfuck Compiler for Linux (ELF)
 
-`goo` is a lightweight compiler for the programming language [brainfuck](https://en.wikipedia.org/wiki/Brainfuck), which create Linux-native ELF-binaries.
+`goo` is a lightweight compiler for the programming language [brainfuck](https://en.wikipedia.org/wiki/Brainfuck), which creates Linux-native ELF-binaries.
 `goo` either translates brainfuck-code directly to Assembler or creates an object file. Additionally, `goo` provides an interactive REPL mode.
 
 ---
@@ -19,7 +19,7 @@
 ### Requirements
 
 - CMake (Version 3.12 or above)
-- C++17-compatible compiler (z.B. `g++` oder `clang++`)
+- C++17-compatible compiler (for example `g++` or `clang++`)
 - [`nasm`](https://www.nasm.us/) (for assembling the created ASM-files)
 - optionally: [`ld`](https://man7.org/linux/man-pages/man1/ld.1.html) to link the object files
 
