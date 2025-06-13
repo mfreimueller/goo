@@ -33,25 +33,32 @@ namespace goo {
     void CodeGen::visitIncrementByte(IncrementByte *stmt) {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
+        builder->lea("rax", "[rel tape]");
+
         if (stmt->count == 1) {
-            builder->add("byte [tape + rbx]", "1");
+            builder->add("byte [rax + rbx]", "1");
 
             if (config.debugBuild) {
                 builder->comment(stmt->debugInfo());
             }
 
-            builder->cmp("byte [tape + rbx]", "0")
+            builder->cmp("byte [rax + rbx]", "0")
                     .jge(incGuard)
-                    .mov("byte [tape + rbx]", "0");
+                    .add("byte [rax + rbx]", "127");
         } else {
             // We simply add [tape + rbx] + moves. In case of an overflow we wrap around and end up with a negative
             // number. Then we simply add 127 to make the number positive again.
-            builder->add("byte [tape + rbx]", std::to_string(stmt->count))
-                    .cmp("byte [tape + rbx]", "0")
+            builder->add("byte [rax + rbx]", std::to_string(stmt->count));
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("byte [rax + rbx]", "0")
                     .jge(incGuard);
 
             // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
-            builder->add("rbx", "127");
+            builder->add("byte [rax + rbx]", "127");
         }
 
         builder->label(incGuard);
@@ -60,16 +67,18 @@ namespace goo {
     void CodeGen::visitDecrementByte(DecrementByte *stmt) {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
 
+        builder->lea("rax", "[rel tape]");
+
         if (stmt->count == 1) {
-            builder->sub("byte [tape + rbx]", "1");
+            builder->sub("byte [rax + rbx]", "1");
 
             if (config.debugBuild) {
                 builder->comment(stmt->debugInfo());
             }
 
-            builder->cmp("byte [tape + rbx]", "0")
+            builder->cmp("byte [rax + rbx]", "0")
                     .jge(decGuard)
-                    .mov("byte [tape + rbx]", "127");
+                    .mov("byte [rax + rbx]", "127");
         } else {
             // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
             // subtract rbx-moves. Otherwise, we calculate 127 - (moves-rbx) and store this in rbx.
@@ -81,16 +90,16 @@ namespace goo {
                 builder->comment(stmt->debugInfo());
             }
 
-            builder->cmp("r8b", "byte [tape + rbx]")
+            builder->cmp("r8b", "byte [rax + rbx]")
                     .jle(underflowGuard);
 
             // Now rdx is larger. Therefor we subtract rbx from rdx, write 127 into rbx and subtract rdx from rbx.
-            builder->sub("r8b", "byte [tape + rbx]")
-                    .mov("byte [tape + rbx]", "127")
+            builder->sub("r8b", "byte [rax + rbx]")
+                    .mov("byte [rax + rbx]", "127")
                     .label(underflowGuard);
 
             // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
-            builder->sub("byte [tape + rbx]", "r8b");
+            builder->sub("byte [rax + rbx]", "r8b");
         }
 
         builder->label(decGuard);
@@ -111,7 +120,7 @@ namespace goo {
 
             builder->cmp("rbx", "29999")
                     .jle(ptrGuard)
-                    .mov("rbx", "0");
+                    .sub("rbx", "29999");
         } else {
             // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
             // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
@@ -216,7 +225,8 @@ namespace goo {
             builder->comment(stmt->debugInfo());
         }
 
-        builder->cmp("byte [tape + rbx]", "byte 0")
+        builder->lea("rax", "[rel tape]")
+                .cmp("byte [rax + rbx]", "byte 0")
                 .jle(exitLoopLabel)
                 .newLine();
 
