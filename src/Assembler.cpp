@@ -66,7 +66,7 @@ namespace goo {
 
         close(fd);
 
-        fileName = tmpFile.string();
+        fileName = tmpPath;
 
         std::ofstream out(tmpPath);
         out << content;
