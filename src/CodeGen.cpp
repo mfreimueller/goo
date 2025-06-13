@@ -6,6 +6,15 @@
 
 #include <format>
 
+/*
+ * Some notes on register usage:
+ * rax stores the addresses (tape, syscalls etc.)
+ * rbx stores the tape pointer and should only be used for this.
+ * rdi is unused.
+ * rdx is used by increment/decrement ops, therefor it is unsafe to use it in a different context.
+ * r8 to r11 may be used for storing data.
+ */
+
 namespace goo {
     std::shared_ptr<Payload> CodeGen::run(const std::shared_ptr<Payload> payload) {
         // reset state of code gen to allow for reuse
