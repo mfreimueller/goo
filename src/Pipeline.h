@@ -11,6 +11,7 @@
 #include "Payload.h"
 
 namespace goo {
+    struct AssemblerConfig;
 
     class Phase;
     class PipelineBuilder;
@@ -83,7 +84,7 @@ namespace goo {
 
         virtual PipelineBuilder &codeGen() = 0;
 
-        virtual PipelineBuilder &assembler() = 0;
+        virtual PipelineBuilder &assembler(AssemblerConfig config) = 0;
 
         virtual PipelineBuilder &astPrinter() = 0;
 
@@ -114,7 +115,7 @@ namespace goo {
 
         PipelineBuilder &codeGen() override;
 
-        PipelineBuilder &assembler() override;
+        PipelineBuilder &assembler(AssemblerConfig config) override;
 
         PipelineBuilder &astPrinter() override;
 

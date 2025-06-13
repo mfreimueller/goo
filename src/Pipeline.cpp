@@ -92,8 +92,8 @@ namespace goo {
         return *this;
     }
 
-    PipelineBuilder &StandardPipelineBuilder::assembler() {
-        phases.emplace_back(std::make_unique<Assembler>(_reporter));
+    PipelineBuilder &StandardPipelineBuilder::assembler(AssemblerConfig config) {
+        phases.emplace_back(std::make_unique<Assembler>(config, _reporter));
         return *this;
     }
 

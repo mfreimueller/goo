@@ -23,25 +23,30 @@ namespace goo {
             return nullptr;
         }
 
-        std::string cmd;
-        bool debugBuild = true; // TODO: pass options!
-        std::string output = "out.o";
-
-        if (debugBuild) {
-            cmd = "nasm -f elf64 -g -F dwarf " + tmpPath + " -o " + output;
-        } else {
-            cmd = "nasm -f elf64 " + tmpPath + " -o " + output;
+        if (config.verbose) {
+            std::cout << "Created tmp file at: " << tmpPath << std::endl;
         }
 
-        std::cout << cmd << std::endl;
+        std::string cmd;
+
+        if (config.debugBuild) {
+            cmd = std::format("nasm -f elf64 -g -F dwarf {} -o {}", tmpPath, config.outputFile);
+        } else {
+            cmd = std::format("nasm -f elf64 {} -o {}", tmpPath, config.outputFile);
+        }
+
+        if (config.verbose) {
+            std::cout << "Executing: " << cmd << std::endl;
+        }
 
         if (const int result = system(cmd.c_str()); result != 0) {
             reporter.error(std::format("Error: Failed to execute command: {}", cmd));
             return nullptr;
         }
 
-        std::cout << "Created object file " << output << std::endl;
         fs::remove(tmpPath);
+
+        std::cout << "[Finished]" << std::endl;
 
         return nullptr;
     }
