@@ -1,0 +1,4 @@
+Unit tests
+==========
+
+Make sure that optimized statements are equal to their non-optimized counterparts. aka test for commutativity.
