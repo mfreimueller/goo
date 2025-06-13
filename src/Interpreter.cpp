@@ -5,15 +5,20 @@
 #include "Interpreter.h"
 
 #include <cstring>
+#include <format>
 #include <iostream>
 #include <ostream>
 #include <utility>
 #include <unistd.h>
 
+#include "Payload.h"
+#include "Pipeline.h"
+#include "Reporter.h"
+
 #define TAPE_SIZE 30000
 
 namespace goo {
-    Interpreter::Interpreter(Reporter &reporter): tapePtr(0), reporter(reporter) {
+    Interpreter::Interpreter(Reporter &reporter): Phase(reporter), tapePtr(0) {
         tape = new unsigned char[TAPE_SIZE];
         memset(tape, 0, TAPE_SIZE);
     }
@@ -25,12 +30,23 @@ namespace goo {
         tapePtr = 0;
     }
 
-    void Interpreter::interpret(const std::vector<Stmt *>& statements) {
-        for (const auto &stmt : statements) {
+    std::shared_ptr<Payload> Interpreter::run(const std::shared_ptr<Payload> payload) {
+        // soft reset state to allow for reuse
+        output = "";
+
+        const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
+
+        interpret(stmtPayload->stmts);
+
+        return std::make_shared<StringPayload>(StringPayload { .value = output });
+    }
+
+    void Interpreter::interpret(const std::vector<std::shared_ptr<Stmt>> &stmts) {
+        for (const auto &stmt : stmts) {
             if (stmt != nullptr) {
                 stmt->accept(this);
 
-                if (reporter.hasError()) break;
+                if (reporter.hasError()) return;
             }
         }
     }
@@ -74,7 +90,7 @@ namespace goo {
     }
 
     void Interpreter::visitOutput(Output *stmt) {
-        std::cout << tape[tapePtr];
+        output += tape[tapePtr];
     }
 
     void Interpreter::visitConditional(Conditional *stmt) {
@@ -84,15 +100,15 @@ namespace goo {
     }
 
     void Interpreter::visitDebug(Debug *stmt) {
-        std::cout << "DEBUG: line = " << std::to_string(stmt->line) << ", column = " << std::to_string(stmt->column) << ", ptr = " << std::to_string(tapePtr) << ", tape = ";
+        output += std::format("DEBUG: line = {}, column = {}, ptr = {}, tape = ", stmt->line, stmt->column, tapePtr);
 
         for (int idx = 0; idx < TAPE_SIZE; idx++) {
             if (tape[idx] != 0) {
-                std::cout << "[" << std::to_string(idx) << " = " << std::to_string(tape[idx]) << "]";
+                output += std::format("[{} = {}]", idx, tape[idx]);
             }
         }
 
-        std::cout << std::endl;
+        output += "\n";
     }
 
 

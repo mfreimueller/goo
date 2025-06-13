@@ -5,7 +5,8 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-#include "Reporter.h"
+#include "Payload.h"
+#include "Pipeline.h"
 #include "Stmt.h"
 
 namespace goo {
@@ -27,11 +28,11 @@ namespace goo {
     /// symbolized by the exclamation point (!). Using this command prints useful
     /// debug information about the current state of the Interpreter, such as the
     /// tape pointer and the tape itself.
-    class Interpreter final : public Visitor {
+    class Interpreter final : public Phase, public Visitor {
         unsigned char *tape;
         int tapePtr;
 
-        Reporter &reporter;
+        std::string output;
 
     public:
         explicit Interpreter(Reporter &reporter);
@@ -42,10 +43,12 @@ namespace goo {
         /// It is recommended to check both flags after execution to inform the user.
         /// If during execution an error occurs, the execution stops, leaving the tape possibly
         /// in an inconsistent state.
-        /// @param statements A list of statements to interpret. Nullptr-entries are being ignored.
-        void interpret(const std::vector<Stmt *> &statements);
+        /// @param payload A list of statements to interpret. Nullptr-entries are being ignored.
+        std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) override;
 
     private:
+        void interpret(const std::vector<std::shared_ptr<Stmt>> &stmts);
+
         void visitIncrementByte(IncrementByte *stmt) override;
 
         void visitDecrementByte(DecrementByte *stmt) override;

@@ -4,6 +4,7 @@
 
 #ifndef STMT_H
 #define STMT_H
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -24,7 +25,7 @@ namespace goo {
     /// A statement is a single command that performs a certain operation. This class
     /// represents an abstract base for any actual brainfuck statements.
     ///
-    /// Statements are used by the Interpreter or the Assembler to execute the brainfuck
+    /// Statements are used by the Interpreter or the CodeGen to execute the brainfuck
     /// code or translate it to assembler. A statement itself is 'dumb', in that it doesn't
     /// know how to process itself. Instead, each processing unit, such as the Interpreter,
     /// implements the Visitor-interface, which calls ::accept(), which in turn
@@ -132,13 +133,11 @@ namespace goo {
 
     class Conditional final : public Stmt {
     public:
-        std::vector<Stmt *> stmts;
+        std::vector<std::shared_ptr<Stmt>> stmts;
 
         explicit Conditional(const int column, const int line,
-                             const std::vector<Stmt *> &stmts): Stmt(column, line, IF), stmts(stmts) {
+                             const std::vector<std::shared_ptr<Stmt>> &stmts): Stmt(column, line, IF), stmts(stmts) {
         }
-
-        ~Conditional() override;
 
         void accept(Visitor *visitor) override {
             visitor->visitConditional(this);

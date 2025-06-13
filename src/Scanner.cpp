@@ -5,13 +5,22 @@
 #include "Scanner.h"
 
 namespace goo {
-    std::vector<Token> Scanner::scanTokens() {
+    std::shared_ptr<Payload> Scanner::run(const std::shared_ptr<Payload> payload) {
+        // reset the state of the scanner to allow for reuse
+        current = 0;
+        line = 1;
+        column = 0;
+        tokens.clear();
+
+        const auto stringPayload = std::static_pointer_cast<StringPayload>(payload);
+        source = stringPayload->value;
+
         while (!isAtEnd()) {
             scanToken();
         }
 
         addToken(EOF_);
-        return tokens;
+        return std::make_shared<TokenPayload>(TokenPayload{.tokens = tokens});
     }
 
     bool Scanner::isAtEnd() const {
@@ -51,6 +60,6 @@ namespace goo {
     }
 
     void Scanner::addToken(TokenType type) {
-        tokens.emplace_back(type, line, column);
+        tokens.emplace_back(std::make_shared<Token>(type, line, column));
     }
 } // goo

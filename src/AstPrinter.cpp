@@ -4,12 +4,24 @@
 
 #include "AstPrinter.h"
 
+#include <format>
 #include <iostream>
 #include <ostream>
 
 namespace goo {
-    void AstPrinter::print(const std::vector<Stmt *> &statements) {
-        for (auto &stmt: statements) {
+    std::shared_ptr<Payload> AstPrinter::run(const std::shared_ptr<Payload> payload) {
+        // reset state for further reuse
+        depth = 0;
+        output = "";
+
+        const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
+        print(stmtPayload->stmts);
+
+        return std::make_shared<StringPayload>(StringPayload{.value = output});
+    }
+
+    void AstPrinter::print(const std::vector<std::shared_ptr<Stmt> > &stmts) {
+        for (const auto &stmt: stmts) {
             if (stmt != nullptr) {
                 stmt->accept(this);
             }
@@ -17,42 +29,31 @@ namespace goo {
     }
 
     void AstPrinter::visitIncrementByte(IncrementByte *stmt) {
-        addIndentation();
-        std::cout << "<IncrementByte> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) <<
-                std::endl;
+        output += std::format("{}<IncrementByte> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitDecrementByte(DecrementByte *stmt) {
-        addIndentation();
-        std::cout << "<DecrementByte> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) <<
-                std::endl;
+        output += std::format("{}<DecrementByte> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitIncrementPtr(IncrementPtr *stmt) {
-        addIndentation();
-        std::cout << "<IncrementPtr> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) <<
-                std::endl;
+        output += std::format("{}<IncrementPtr> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitDecrementPtr(DecrementPtr *stmt) {
-        addIndentation();
-        std::cout << "<DecrementPtr> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) <<
-                std::endl;
+        output += std::format("{}<DecrementPtr> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitInput(Input *stmt) {
-        addIndentation();
-        std::cout << "<Input> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) << std::endl;
+        output += std::format("{}<Input> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitOutput(Output *stmt) {
-        addIndentation();
-        std::cout << "<Output> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) << std::endl;
+        output += std::format("{}<Output> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
     void AstPrinter::visitConditional(Conditional *stmt) {
-        addIndentation();
-        std::cout << "<Conditional> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) << std::endl;
+        output += std::format("{}<Conditional> {}:{}\n", indentation(), stmt->line, stmt->column);
 
         depth++;
         print(stmt->stmts);
@@ -60,14 +61,16 @@ namespace goo {
     }
 
     void AstPrinter::visitDebug(Debug *stmt) {
-        addIndentation();
-        std::cout << "<Debug> " << std::to_string(stmt->line) << ":" << std::to_string(stmt->column) << std::endl;
+        output += std::format("{}<Debug> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
 
-    void AstPrinter::addIndentation() const {
+    std::string AstPrinter::indentation() const {
+        std::string _indentation;
         for (int i = 0; i < depth; i++) {
-            std::cout << "\t";
+            _indentation += "\t";
         }
+
+        return _indentation;
     }
 } // goo

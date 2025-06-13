@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "Payload.h"
+#include "Pipeline.h"
 #include "Token.h"
 
 namespace goo {
@@ -17,9 +19,9 @@ namespace goo {
     ///
     /// The scanner doesn't execute or interpret any actual code, it merely turns
     /// each lexeme into a corresponding (dumb) token for further processing.
-    class Scanner {
-        const std::string &source;
-        std::vector<Token> tokens;
+    class Scanner final : public Phase {
+        std::string source;
+        std::vector<std::shared_ptr<Token>> tokens;
 
         int current = 0;
 
@@ -28,13 +30,13 @@ namespace goo {
         int column = 0;
 
     public:
-        explicit Scanner(const std::string &source) : source(source) {
+        explicit Scanner(Reporter &reporter) : Phase(reporter) {
         }
 
         /// Scans the source and extracts the valid lexemes, turning them to tokens. This function
         /// doesn't check for syntax errors, instead it blindly turns the code into tokens.
         /// @return A list of tokens representing the valid brainfuck statements in the source provided.
-        std::vector<Token> scanTokens();
+        std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) override;
 
     private:
         /// Compares the value in `current` with the length of source to verify whether the end of

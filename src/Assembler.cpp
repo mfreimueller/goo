@@ -1,185 +1,75 @@
 //
-// Created by michael on 10.06.25.
+// Created by michael on 13.06.25.
 //
 
 #include "Assembler.h"
 
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <iostream>
+
+#include "Reporter.h"
+
+namespace fs = std::filesystem;
 
 namespace goo {
-    std::string Assembler::execute(const std::vector<Stmt *> &statements) {
-        for (auto &stmt: statements) {
-            if (stmt != nullptr) {
-                stmt->accept(this);
-            }
+
+    std::shared_ptr<Payload> Assembler::run(std::shared_ptr<Payload> payload) {
+        const auto stringPayload = std::static_pointer_cast<StringPayload>(payload);
+
+        std::string tmpPath;
+        if (!writeToTmpFile(stringPayload->value, tmpPath)) {
+            return nullptr;
         }
 
-        // After executing all commands we want to finalize our asm code by adding the exit syscall.
-        // This also prevents successive calls to ::execute from creating an inconsistent state, as this exit command
-        // kills the process.
-        return builder.mov("rax", "60")
-                .x_or("rdi", "rdi")
-                .syscall()
-                .build();
-    }
+        std::string cmd;
+        bool debugBuild = true; // TODO: pass options!
+        std::string output = "out.o";
 
-    void Assembler::visitIncrementByte(IncrementByte *stmt) {
-        const auto incGuard = std::format("incGuard{}", ++labelCounter);
-
-        if (stmt->count == 1) {
-            builder.add("byte [tape + rbx]", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("byte [tape + rbx]", "0")
-                    .jge(incGuard)
-                    .mov("byte [tape + rbx]", "0");
+        if (debugBuild) {
+            cmd = "nasm -f elf64 -g -F dwarf " + tmpPath + " -o " + output;
         } else {
-            // We simply add [tape + rbx] + moves. In case of an overflow we wrap around and end up with a negative
-            // number. Then we simply add 127 to make the number positive again.
-            builder.add("byte [tape + rbx]", std::to_string(stmt->count))
-                    .cmp("byte [tape + rbx]", "0")
-                    .jge(incGuard);
-
-            // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
-            builder.add("rbx", "127");
+            cmd = "nasm -f elf64 " + tmpPath + " -o " + output;
         }
 
-        builder.label(incGuard);
-    }
+        std::cout << cmd << std::endl;
 
-    void Assembler::visitDecrementByte(DecrementByte *stmt) {
-        const auto decGuard = std::format("decGuard{}", ++labelCounter);
-
-        if (stmt->count == 1) {
-            builder.sub("byte [tape + rbx]", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("byte [tape + rbx]", "0")
-                    .jge(decGuard)
-                    .mov("byte [tape + rbx]", "127");
-        } else {
-            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
-            // subtract rbx-moves. Otherwise, we calculate 127 - (moves-rbx) and store this in rbx.
-            const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
-
-            builder.mov("r8b", std::to_string(stmt->count))
-                    .cmp("r8b", "byte [tape + rbx]")
-                    .jle(underflowGuard);
-
-            // Now rdx is larger. Therefor we subtract rbx from rdx, write 127 into rbx and subtract rdx from rbx.
-            builder.sub("r8b", "byte [tape + rbx]")
-                    .mov("byte [tape + rbx]", "127")
-                    .label(underflowGuard);
-
-            // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
-            builder.sub("byte [tape + rbx]", "r8b");
+        if (const int result = system(cmd.c_str()); result != 0) {
+            reporter.error(std::format("Error: Failed to execute command: {}", cmd));
+            return nullptr;
         }
 
-        builder.label(decGuard);
+        std::cout << "Created object file " << output << std::endl;
+        fs::remove(tmpPath);
+
+        return nullptr;
     }
 
-    void Assembler::visitIncrementPtr(IncrementPtr *stmt) {
-        const auto labelCounter = ++this->labelCounter;
-        const auto ptrGuard = std::format("ptrGuard{}", labelCounter);
+    bool Assembler::writeToTmpFile(const std::string& content, std::string &fileName) const {
+        const fs::path tmpDir = fs::temp_directory_path();
 
-        if (stmt->count == 1) {
-            // as our tape is 30.000 bytes long, we need
-            // a guard to jump back to 0 in case of overflow
-            builder.add("rbx", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("rbx", "29999")
-                    .jle(ptrGuard)
-                    .mov("rbx", "0");
-        } else {
-            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
-            // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
+        // We need to add the XXXXXX to the filepath, because mkstemps replaces this with random characters.
+        const fs::path tmpFile = tmpDir / fs::path("bf_tmpXXXXXX.asm");
 
-            builder.add("rbx", std::to_string(stmt->count))
-                    .cmp("rbx", "29999")
-                    .jle(ptrGuard);
-
-            // Now rbx is larger than 29,999. Therefor we subtract 29,999 from rbx.
-            builder.sub("rbx", "29999");
+        std::string tmpPath = tmpFile.string();
+        const int fd = mkstemps(tmpPath.data(), 4);
+        if (fd == -1) {
+            reporter.error(std::format("Failed to create temporary file: {}", tmpPath));
+            return false;
         }
 
-        builder.label(ptrGuard);
+        close(fd);
+
+        fileName = tmpFile.string();
+
+        std::ofstream out(tmpPath);
+        out << content;
+        out.close();
+
+        return true;
     }
 
-    void Assembler::visitDecrementPtr(DecrementPtr *stmt) {
-        const auto ptrGuard = std::format("ptrGuard{}", ++labelCounter);
 
-        if (stmt->count == 1) {
-            builder.sub("rbx", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("rbx", "0")
-                    .jge(ptrGuard)
-                    .mov("rbx", "29999");
-        } else {
-            // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
-            // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
-            const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
 
-            builder.mov("rdx", std::to_string(stmt->count))
-                    .cmp("rdx", "rbx")
-                    .jle(underflowGuard);
-
-            // Now rdx is larger. Therefor we subtract rbx from rdx, write 29,999 into rbx and subtract rdx from rbx.
-            builder.sub("rdx", "rbx")
-                    .mov("rbx", "29999")
-                    .label(underflowGuard);
-
-            // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
-            builder.sub("rbx", "rdx");
-        }
-
-        builder.label(ptrGuard);
-    }
-
-    void Assembler::visitInput(Input *stmt) {
-        builder.mov("rax", "0")
-                .comment(stmt->debugInfo())
-                .mov("rdi", "0")
-                .lea("rsi", "[tape + rbx]")
-                .mov("rdx", "1")
-                .syscall()
-                .newLine();
-    }
-
-    void Assembler::visitOutput(Output *stmt) {
-        builder.mov("rax", "1")
-                .comment(stmt->debugInfo())
-                .mov("rdi", "1")
-                .lea("rsi", "[tape + rbx]")
-                .mov("rdx", "1")
-                .syscall()
-                .newLine();
-    }
-
-    /// Creates the base structure of a loop and recursively calls
-    /// resolve for each statement. Because it is possible to have multiple
-    /// conditionals, even recursively so, we track the number of loops
-    /// and use it as a label.
-    void Assembler::visitConditional(Conditional *stmt) {
-        const auto loopLabel = std::format("loop{}", ++labelCounter);
-        const auto exitLoopLabel = loopLabel + "Exit";
-
-        // As we need to perform the loop-condition check first, we add it before translating any of the children
-        // code.
-        builder.newLine()
-                .label(loopLabel)
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "byte 0")
-                .jle(exitLoopLabel)
-                .newLine();
-
-        for (const auto &s: stmt->stmts) {
-            s->accept(this);
-        }
-
-        builder.jmp(loopLabel)
-                .label(exitLoopLabel);
-    }
-
-    void Assembler::visitDebug(Debug *stmt) {
-        // There is no practical way to implement the debug statement, in my opinion.
-        // To debug assembler code, it is better use gdb or similar debuggers.
-    }
-}
+} // goo

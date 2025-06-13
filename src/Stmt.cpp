@@ -6,12 +6,4 @@
 
 namespace goo {
 
-    Conditional::~Conditional() {
-        for (const auto it : stmts) {
-            delete it;
-        }
-        stmts.clear();
-    }
-
-
 } // goo

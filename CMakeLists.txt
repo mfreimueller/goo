@@ -16,8 +16,8 @@ add_executable(goo src/main.cpp
         src/Parser.h
         src/Stmt.cpp
         src/Stmt.h
-        src/Assembler.cpp
-        src/Assembler.h
+        src/CodeGen.cpp
+        src/CodeGen.h
         src/Interpreter.cpp
         src/Interpreter.h
         src/AstPrinter.cpp
@@ -29,6 +29,15 @@ add_executable(goo src/main.cpp
         src/Reporter.cpp
         src/Reporter.h
         src/Optimizer.cpp
-        src/Optimizer.h)
+        src/Optimizer.h
+        src/Pipeline.cpp
+        src/Pipeline.h
+        src/Input.cpp
+        src/Input.h
+        src/Payload.h
+        src/Assembler.cpp
+        src/Assembler.h
+        src/Output.cpp
+        src/Output.h)
 
 target_link_libraries(goo PRIVATE CLI11::CLI11)

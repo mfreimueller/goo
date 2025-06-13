@@ -5,23 +5,30 @@
 #include "Optimizer.h"
 
 namespace goo {
+    std::shared_ptr<Payload> Optimizer::run(const std::shared_ptr<Payload> payload) {
+        // reset state of optimizer to allow for reuse
+        optimizedStmts.clear();
 
-    std::vector<Stmt *> Optimizer::run(const std::vector<Stmt *> &stmts) {
-        std::vector<Stmt *> optimizedStmts;
+        const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
+
+        const auto stmts = stmtPayload->stmts;
+        const auto optimizedStmts = optimizeStmts(stmts);
+
+        return std::make_shared<StmtPayload>(StmtPayload { .stmts = optimizedStmts });
+    }
+
+    std::vector<std::shared_ptr<Stmt>> Optimizer::optimizeStmts(const std::vector<std::shared_ptr<Stmt>> &stmts) {
+        std::vector<std::shared_ptr<Stmt>> optimizedStmts;
 
         for (int idx = 0; idx < stmts.size(); idx++) {
-            if (auto stmt = stmts[idx]; stmt->type < OUT) {
-                groupStmts(idx, stmts, optimizedStmts);
+            if (const auto& stmt = stmts[idx]; stmt->type < OUT) {
+                auto grouped = groupStmts(idx, stmts);
+                optimizedStmts.insert(optimizedStmts.end(), grouped.begin(), grouped.end());
             } else if (stmt->type == IF) {
-                const auto conditional = dynamic_cast<Conditional *>(stmt);
-                auto newStmts = run(conditional->stmts);
+                const auto conditional = std::static_pointer_cast<Conditional>(stmt);
+                auto newStmts = optimizeStmts(conditional->stmts);
 
                 optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
-
-                // We have to manually clear the statements here because they have already been deleted in the
-                // recursive call of ::run()
-                conditional->stmts.clear();
-                delete conditional;
             } else {
                 optimizedStmts.push_back(stmt);
             }
@@ -30,15 +37,17 @@ namespace goo {
         return optimizedStmts;
     }
 
-    void Optimizer::groupStmts(int &idx, const std::vector<Stmt *> &stmts, std::vector<Stmt *> &optimized_stmts) {
+    std::vector<std::shared_ptr<Stmt>> Optimizer::groupStmts(int &idx, const std::vector<std::shared_ptr<Stmt> > &stmts) {
+        std::vector<std::shared_ptr<Stmt>> optimizedStmts;
+
         auto stmt = stmts[idx];
 
         const int line = stmt->line;
         const int column = stmt->column;
 
         const bool isByteOp = stmt->type < INC_PTR;
-        const TokenType increase = isByteOp ? TokenType::INC_BYTE : TokenType::INC_PTR;
-        const TokenType decrease = isByteOp ? TokenType::DEC_BYTE : TokenType::DEC_PTR;
+        const TokenType increase = isByteOp ? INC_BYTE : INC_PTR;
+        const TokenType decrease = isByteOp ? DEC_BYTE : DEC_PTR;
 
         int moves = 0;
 
@@ -50,10 +59,8 @@ namespace goo {
             stmt = stmts[idx];
             if (stmt->type == increase) {
                 moves++;
-                delete stmts[idx];
             } else if (stmt->type == decrease) {
                 moves--;
-                delete stmts[idx];
             } else {
                 // if we have no ptr operator anymore, we break the loop
                 break;
@@ -66,20 +73,21 @@ namespace goo {
 
         if (moves > 0) {
             if (isByteOp) {
-                optimized_stmts.push_back(new IncrementByte(line, column, moves));
+                optimizedStmts.push_back(std::make_shared<IncrementByte>(line, column, moves));
             } else {
-                optimized_stmts.push_back(new IncrementPtr(line, column, moves));
+                optimizedStmts.push_back(std::make_shared<IncrementPtr>(line, column, moves));
             }
         } else if (moves < 0) {
             // As we have negative moves, we must negate them to have the positive value
             moves = -moves;
 
             if (isByteOp) {
-                optimized_stmts.push_back(new DecrementByte(line, column, moves));
+                optimizedStmts.push_back(std::make_shared<DecrementByte>(line, column, moves));
             } else {
-                optimized_stmts.push_back(new DecrementPtr(line, column, moves));
+                optimizedStmts.push_back(std::make_shared<DecrementPtr>(line, column, moves));
             }
         }
-    }
 
+        return optimizedStmts;
+    }
 }
