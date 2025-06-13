@@ -8,22 +8,26 @@
 #include "Scanner.h"
 #include "Parser.h"
 #include "CodeGen.h"
-#include "Interpreter.h"
-#include "AsmBuilder.h"
-#include "Optimizer.h"
+#include "Assembler.h"
 #include "Util.h"
 #include "Pipeline.h"
 
 using namespace goo;
 namespace fs = std::filesystem;
 
-int runFile(const std::string &inputFile, const std::string &outputFile, bool printAsmCode, bool debugBuild);
+struct Config {
+    bool debugBuild = false;
+    bool emitAstTree = false;
+    bool emitAsmCode = false;
+    bool noOpt = false;
+    bool verbose = false;
+
+    std::string outputFile = "out.o";
+};
+
+int runFile(const std::string &filepath, const Config &config);
 
 void runPrompt();
-
-std::vector<Stmt *> transform(const std::string &source, Reporter &reporter);
-
-int compileAsmCode(std::string &code, const std::string &outputFile, bool debugBuild);
 
 int main(const int argc, char **argv) {
     CLI::App app{
@@ -31,46 +35,34 @@ int main(const int argc, char **argv) {
         "goo"
     };
 
-    bool printAsmCode = false;
-    app.add_flag("-s", printAsmCode,
+    Config config;
+
+    app.add_flag("--emit-asm", config.emitAsmCode,
                  "Print the translated assembler code instead of producing an object file. This only produces an output if an input file is provided.");
 
-    bool debugBuild = false;
-    app.add_flag("-d", debugBuild,
+    app.add_flag("-d,--debug", config.debugBuild,
                  "Enable the debug build, which includes debug information and symbols in the output file.");
 
-    std::string outputFile = "out.o";
-    app.add_option("-o,--output", outputFile, "Path to a file that contains either ELF code or assembler code.");
+    app.add_flag("--emit-ast", config.emitAstTree,
+                 "Print the AST tree of the converted statements.");
+
+    app.add_flag("--no-opt", config.noOpt,
+                 "Disable any optimizations.");
+
+    app.add_flag("-v,--verbose", config.verbose,
+                 "Print more messages for easier debugging.");
+
+    app.add_option("-o,--output", config.outputFile,
+                   "Path to a file that contains either ELF code or assembler code.");
 
     app.allow_extras();
     CLI11_PARSE(app, argc, argv);
 
-    Reporter reporter;
-    StandardPipelineBuilder builder(reporter);
-
     if (const auto remainingArgs = app.remaining(); !remainingArgs.empty()) {
-        const auto initialPayload = std::make_shared<FilePayload>(FilePayload{.filepath = remainingArgs.at(0)});
-
-        builder.fileInput()
-                .lexer()
-                .parser() // TODO: add ASTPrinter here
-                .optimizer() // TODO: make configurable
-                .codeGen();
-
-        if (printAsmCode) {
-            builder.output();
-        } else {
-            builder.assembler();
-        }
-
-        if (const auto pipeline = builder.build(); !pipeline->execute(initialPayload)) {
-            return 1;
-        }
+        runFile(remainingArgs[0], config);
     } else {
         runPrompt();
     }
-
-    // , outputFile, printAsmCode, debugBuild);
 
     return 0;
 }
@@ -84,7 +76,7 @@ void runPrompt() {
     std::string line;
 
     StandardPipelineBuilder builder(reporter);
-    auto pipeline = builder.stringInput()
+    const auto pipeline = builder.stringInput()
             .lexer()
             .parser()
             .interpreter()
@@ -106,12 +98,49 @@ void runPrompt() {
 
         reporter.setCode(line);
 
-        auto payload = std::make_shared<StringPayload>(StringPayload { .value = line });
+        auto payload = std::make_shared<StringPayload>(StringPayload{.value = line});
         // ReSharper disable once CppDFAUnusedValue
-        auto unused = pipeline->execute(payload);
+        auto _ = pipeline->execute(payload);
 
         reporter.reset();
-
-        std::cout << std::endl;
     }
+}
+
+int runFile(const std::string &filepath, const Config &config) {
+    Reporter reporter;
+    StandardPipelineBuilder builder(reporter);
+
+    const auto initialPayload = std::make_shared<FilePayload>(FilePayload{.filepath = filepath});
+
+    builder.fileInput()
+            .lexer()
+            .parser();
+
+    if (config.emitAstTree) {
+        builder.astPrinter().output();
+    } else {
+        if (!config.noOpt) {
+            builder.optimizer();
+        }
+
+        builder.codeGen(CodeGenConfig{
+            .debugBuild = config.debugBuild
+        });
+
+        if (config.emitAsmCode) {
+            builder.output();
+        } else {
+            builder.assembler(AssemblerConfig{
+                .debugBuild = config.debugBuild,
+                .verbose = config.verbose,
+                .outputFile = config.outputFile
+            });
+        }
+    }
+
+    if (const auto pipeline = builder.build(); !pipeline->execute(initialPayload)) {
+        return 1;
+    }
+
+    return 0;
 }
