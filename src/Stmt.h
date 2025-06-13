@@ -44,6 +44,13 @@ namespace goo {
 
         virtual ~Stmt() = default;
 
+        /// Attempts to match the pattern provided as param. For regular statements, only one token type must be
+        /// provided as pattern, otherwise this call fails. For conditionals, the pattern includes all sub-statements.
+        ///
+        /// @param pattern A pattern to match.
+        /// @return True if the statement matches the exact pattern, otherwise false.
+        [[nodiscard]] virtual bool matches(std::vector<TokenType> pattern) const;
+
         /// Guides a visitor to the correct function to process this statement. Each
         /// inheriting class of Stmt must call the proper function.
         /// @param visitor A visitor that processes this statement.
@@ -133,11 +140,17 @@ namespace goo {
 
     class Conditional final : public Stmt {
     public:
-        std::vector<std::shared_ptr<Stmt>> stmts;
+        std::vector<std::shared_ptr<Stmt> > stmts;
 
         explicit Conditional(const int column, const int line,
-                             const std::vector<std::shared_ptr<Stmt>> &stmts): Stmt(column, line, IF), stmts(stmts) {
+                             const std::vector<std::shared_ptr<Stmt> > &stmts): Stmt(column, line, IF), stmts(stmts) {
         }
+
+        /// Matches the pattern against this conditional. Only the complete conditional can be matches, therefor
+        /// the pattern must begin with IF and end with FI, otherwise the behavior is unpredictable.
+        /// @param pattern A pattern to match. It must begin with IF and end with FI.
+        /// @return True if the pattern matches the conditional.
+        bool matches(std::vector<TokenType> pattern) const;
 
         void accept(Visitor *visitor) override {
             visitor->visitConditional(this);
