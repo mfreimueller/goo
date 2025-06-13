@@ -62,7 +62,10 @@ namespace goo {
 
         void visitDebug(Debug *stmt) override;
 
+        void visitReset(Reset *stmt) override;
+
+        void visitTransfer(Transfer *stmt) override;
     };
 }
 
-#endif //ASSEMBLER_H
+#endif //CODEGEN_H

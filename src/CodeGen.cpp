@@ -229,7 +229,70 @@ namespace goo {
     }
 
     void CodeGen::visitDebug(Debug *stmt) {
-        // There is no practical way to implement the debug statement, in my opinion.
-        // To debug assembler code, it is better use gdb or similar debuggers.
+        builder->mov("r8b", "byte [tape + rbx]");
+    }
+
+    void CodeGen::visitReset(Reset *stmt) {
+        builder->
+                lea("rax", "[rel tape]")
+                .mov("byte [rax + rbx]", std::to_string(stmt->initialValue));
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+    }
+
+    void CodeGen::visitTransfer(Transfer *stmt) {
+        // We store the original pointer in rax
+        builder->mov("r8", "rbx");
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+
+        // Then we (ab)use our pointer inc/dec logic to move the pointer to the proper offset
+        // First we move the pointer to where we want to copy from
+        if (stmt->subOffset > 0) {
+            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->subOffset);
+            visitIncrementPtr(incPtr);
+            delete incPtr;
+        } else if (stmt->subOffset < 0) {
+            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->subOffset);
+            visitDecrementPtr(decPtr);
+            delete decPtr;
+        }
+
+        // Then we move the value from rbx to r10 to store it, while we do the same for the value we want to copy to
+        builder->mov("r10", "rbx");
+
+        if (stmt->subOffset != 0) {
+            builder->mov("rbx", "r8"); // Reset to the original ptr location
+        }
+
+        if (stmt->addOffset > 0) {
+            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->addOffset);
+            visitIncrementPtr(incPtr);
+            delete incPtr;
+        } else if (stmt->addOffset < 0) {
+            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->addOffset);
+            visitDecrementPtr(decPtr);
+            delete decPtr;
+        }
+
+        // Now we want to do the following tape[rbx] += tape[r10]
+        const auto incGuard = std::format("incGuard{}", ++labelCounter);
+
+        builder->lea("rax", "[rel tape]")
+                .mov("r9b", "byte [rax + r10]")
+                .add("byte [rax + rbx]", "r9b")
+                .cmp("byte [rax + rbx]", "0")
+                .jge(incGuard);
+
+        // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
+        builder->add("byte [rax + rbx]", "127");
+
+        // Finally we reset our tape pointer to the original value, as a copy statement doesn't move the pointer.
+        builder->label(incGuard)
+                .mov("rbx", "r8");
     }
 }
