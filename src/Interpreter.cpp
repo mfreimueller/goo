@@ -111,5 +111,13 @@ namespace goo {
         output += "\n";
     }
 
+    void Interpreter::visitReset(Reset *stmt) {
+        tape[tapePtr] = 0;
+    }
+
+    void Interpreter::visitTransfer(Transfer *stmt) {
+        tape[tapePtr + stmt->addOffset] += tape[tapePtr + stmt->subOffset];
+        tape[tapePtr + stmt->subOffset] = 0;
+    }
 
 } // goo

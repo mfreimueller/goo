@@ -64,6 +64,13 @@ namespace goo {
         output += std::format("{}<Debug> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
+    void AstPrinter::visitReset(Reset *stmt) {
+        output += std::format("{}<Reset> {}:{}\n", indentation(), stmt->line, stmt->column);
+    }
+
+    void AstPrinter::visitTransfer(Transfer *stmt) {
+        output += std::format("{}<Transfer> {}:{}\n", indentation(), stmt->line, stmt->column);
+    }
 
     std::string AstPrinter::indentation() const {
         std::string _indentation;

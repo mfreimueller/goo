@@ -67,6 +67,10 @@ namespace goo {
         /// location of the tape pointer, as well as every entry in the internal tape
         /// that is currently not zero.
         void visitDebug(Debug *stmt) override;
+
+        void visitReset(Reset *stmt) override;
+
+        void visitTransfer(Transfer *stmt) override;
     };
 } // goo
 

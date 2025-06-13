@@ -44,6 +44,10 @@ namespace goo {
 
         void visitDebug(Debug *stmt) override;
 
+        void visitReset(Reset *stmt) override;
+
+        void visitTransfer(Transfer *stmt) override;
+
         /// Adds as many \t as the current value of depth holds to standard out.
         /// This method is called by every ::visitXYZ method and has thusly been moved to a separate function.
         std::string indentation() const;
