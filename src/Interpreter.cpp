@@ -31,14 +31,11 @@ namespace goo {
     }
 
     std::shared_ptr<Payload> Interpreter::run(const std::shared_ptr<Payload> payload) {
-        // soft reset state to allow for reuse
-        output = "";
-
         const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
 
         interpret(stmtPayload->stmts);
 
-        return std::make_shared<StringPayload>(StringPayload { .value = output });
+        return nullptr;
     }
 
     void Interpreter::interpret(const std::vector<std::shared_ptr<Stmt>> &stmts) {
@@ -52,30 +49,30 @@ namespace goo {
     }
 
     void Interpreter::visitIncrementByte(IncrementByte *stmt) {
-        tape[tapePtr]++;
+        tape[tapePtr] += stmt->count;
     }
 
     void Interpreter::visitDecrementByte(DecrementByte *stmt) {
-        tape[tapePtr]--;
+        tape[tapePtr] -= stmt->count;
     }
 
     void Interpreter::visitIncrementPtr(IncrementPtr *stmt) {
-        tapePtr++;
+        tapePtr += stmt->count;
 
         if (tapePtr >= TAPE_SIZE) {
             reporter.warning(stmt->line, stmt->column,
-                "Attempted to move the tape pointer beyond the bounds of 30,000. Reset to 0.");
-            tapePtr = 0;
+                "Attempted to move the tape pointer beyond the bounds of 30,000. Wrapping back to 0.");
+            tapePtr -= TAPE_SIZE;
         }
     }
 
     void Interpreter::visitDecrementPtr(DecrementPtr *stmt) {
-        tapePtr--;
+        tapePtr -= stmt->count;
 
         if (tapePtr < 0) {
             reporter.warning(stmt->line, stmt->column,
-                "Attempted to move the tape pointer below 0. Reset to 29,999.");
-            tapePtr = TAPE_SIZE - 1;
+                "Attempted to move the tape pointer below 0. Wrapping back to 29,999.");
+            tapePtr = TAPE_SIZE + tapePtr;
         }
     }
 
@@ -90,7 +87,7 @@ namespace goo {
     }
 
     void Interpreter::visitOutput(Output *stmt) {
-        output += tape[tapePtr];
+        std::cout << tape[tapePtr] << std::flush;
     }
 
     void Interpreter::visitConditional(Conditional *stmt) {
@@ -100,19 +97,19 @@ namespace goo {
     }
 
     void Interpreter::visitDebug(Debug *stmt) {
-        output += std::format("DEBUG: line = {}, column = {}, ptr = {}, tape = ", stmt->line, stmt->column, tapePtr);
+        std::cout << std::format("DEBUG: line = {}, column = {}, ptr = {}, tape = ", stmt->line, stmt->column, tapePtr);
 
         for (int idx = 0; idx < TAPE_SIZE; idx++) {
             if (tape[idx] != 0) {
-                output += std::format("[{} = {}]", idx, tape[idx]);
+                std::cout << std::format("[{} = {}]", idx, tape[idx]);
             }
         }
 
-        output += "\n";
+        std::cout << std::endl;
     }
 
     void Interpreter::visitReset(Reset *stmt) {
-        tape[tapePtr] = 0;
+        tape[tapePtr] = stmt->initialValue;
     }
 
     void Interpreter::visitTransfer(Transfer *stmt) {

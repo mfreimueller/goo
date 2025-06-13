@@ -32,8 +32,6 @@ namespace goo {
         unsigned char *tape;
         int tapePtr;
 
-        std::string output;
-
     public:
         explicit Interpreter(Reporter &reporter);
         ~Interpreter() override;
