@@ -16,8 +16,7 @@ namespace goo {
     };
 
     class Assembler final : public Phase {
-    private:
-        AssemblerConfig config;
+        const AssemblerConfig config;
     public:
         explicit Assembler(AssemblerConfig config, Reporter &reporter) : Phase(reporter), config(std::move(config)) {
         }
