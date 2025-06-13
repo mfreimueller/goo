@@ -17,6 +17,7 @@ namespace fs = std::filesystem;
 
 struct Config {
     bool debugBuild = false;
+    bool interpret = false;
     bool emitAstTree = false;
     bool emitAsmCode = false;
     bool noOpt = false;
@@ -55,6 +56,9 @@ int main(const int argc, char **argv) {
     app.add_option("-o,--output", config.outputFile,
                    "Path to a file that contains either ELF code or assembler code.");
 
+    app.add_option("-i,--interpret", config.interpret,
+                   "Interpret the input file, instead of compiling it.");
+
     app.allow_extras();
     CLI11_PARSE(app, argc, argv);
 
@@ -80,7 +84,6 @@ void runPrompt() {
             .lexer()
             .parser()
             .interpreter()
-            .output()
             .build();
 
     while (true) {
@@ -121,18 +124,22 @@ int runFile(const std::string &filepath, const Config &config) {
             builder.optimizer();
         }
 
-        builder.codeGen(CodeGenConfig{
-            .debugBuild = config.debugBuild
-        });
-
-        if (config.emitAsmCode) {
-            builder.output();
+        if (config.interpret) {
+            builder.interpreter();
         } else {
-            builder.assembler(AssemblerConfig{
-                .debugBuild = config.debugBuild,
-                .verbose = config.verbose,
-                .outputFile = config.outputFile
+            builder.codeGen(CodeGenConfig{
+                .debugBuild = config.debugBuild
             });
+
+            if (config.emitAsmCode) {
+                builder.output();
+            } else {
+                builder.assembler(AssemblerConfig{
+                    .debugBuild = config.debugBuild,
+                    .verbose = config.verbose,
+                    .outputFile = config.outputFile
+                });
+            }
         }
     }
 
