@@ -81,9 +81,9 @@ namespace goo {
         return *this;
     }
 
-    PipelineBuilder &StandardPipelineBuilder::codeGen() {
+    PipelineBuilder &StandardPipelineBuilder::codeGen(CodeGenConfig config) {
         auto asmBuilder = std::static_pointer_cast<AsmBuilder>(std::make_shared<StringAsmBuilder>());
-        phases.emplace_back(std::make_unique<CodeGen>(asmBuilder, _reporter));
+        phases.emplace_back(std::make_unique<CodeGen>(config, asmBuilder, _reporter));
         return *this;
     }
 

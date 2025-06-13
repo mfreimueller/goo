@@ -34,9 +34,13 @@ namespace goo {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
         if (stmt->count == 1) {
-            builder->add("byte [tape + rbx]", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("byte [tape + rbx]", "0")
+            builder->add("byte [tape + rbx]", "1");
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("byte [tape + rbx]", "0")
                     .jge(incGuard)
                     .mov("byte [tape + rbx]", "0");
         } else {
@@ -57,9 +61,13 @@ namespace goo {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
 
         if (stmt->count == 1) {
-            builder->sub("byte [tape + rbx]", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("byte [tape + rbx]", "0")
+            builder->sub("byte [tape + rbx]", "1");
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("byte [tape + rbx]", "0")
                     .jge(decGuard)
                     .mov("byte [tape + rbx]", "127");
         } else {
@@ -67,8 +75,13 @@ namespace goo {
             // subtract rbx-moves. Otherwise, we calculate 127 - (moves-rbx) and store this in rbx.
             const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
 
-            builder->mov("r8b", std::to_string(stmt->count))
-                    .cmp("r8b", "byte [tape + rbx]")
+            builder->mov("r8b", std::to_string(stmt->count));
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("r8b", "byte [tape + rbx]")
                     .jle(underflowGuard);
 
             // Now rdx is larger. Therefor we subtract rbx from rdx, write 127 into rbx and subtract rdx from rbx.
@@ -90,17 +103,26 @@ namespace goo {
         if (stmt->count == 1) {
             // as our tape is 30.000 bytes long, we need
             // a guard to jump back to 0 in case of overflow
-            builder->add("rbx", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("rbx", "29999")
+            builder->add("rbx", "1");
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("rbx", "29999")
                     .jle(ptrGuard)
                     .mov("rbx", "0");
         } else {
             // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
             // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
 
-            builder->add("rbx", std::to_string(stmt->count))
-                    .cmp("rbx", "29999")
+            builder->add("rbx", std::to_string(stmt->count));
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("rbx", "29999")
                     .jle(ptrGuard);
 
             // Now rbx is larger than 29,999. Therefor we subtract 29,999 from rbx.
@@ -114,9 +136,13 @@ namespace goo {
         const auto ptrGuard = std::format("ptrGuard{}", ++labelCounter);
 
         if (stmt->count == 1) {
-            builder->sub("rbx", "1")
-                    .comment(stmt->debugInfo())
-                    .cmp("rbx", "0")
+            builder->sub("rbx", "1");
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("rbx", "0")
                     .jge(ptrGuard)
                     .mov("rbx", "29999");
         } else {
@@ -124,8 +150,13 @@ namespace goo {
             // subtract rbx-moves. Otherwise, we calculate 29,999 - (moves-rbx) and store this in rbx.
             const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
 
-            builder->mov("rdx", std::to_string(stmt->count))
-                    .cmp("rdx", "rbx")
+            builder->mov("rdx", std::to_string(stmt->count));
+
+            if (config.debugBuild) {
+                builder->comment(stmt->debugInfo());
+            }
+
+            builder->cmp("rdx", "rbx")
                     .jle(underflowGuard);
 
             // Now rdx is larger. Therefor we subtract rbx from rdx, write 29,999 into rbx and subtract rdx from rbx.
@@ -141,9 +172,13 @@ namespace goo {
     }
 
     void CodeGen::visitInput(Input *stmt) {
-        builder->mov("rax", "0")
-                .comment(stmt->debugInfo())
-                .mov("rdi", "0")
+        builder->mov("rax", "0");
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+
+        builder->mov("rdi", "0")
                 .lea("rsi", "[tape + rbx]")
                 .mov("rdx", "1")
                 .syscall()
@@ -151,9 +186,13 @@ namespace goo {
     }
 
     void CodeGen::visitOutput(Output *stmt) {
-        builder->mov("rax", "1")
-                .comment(stmt->debugInfo())
-                .mov("rdi", "1")
+        builder->mov("rax", "1");
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+
+        builder->mov("rdi", "1")
                 .lea("rsi", "[tape + rbx]")
                 .mov("rdx", "1")
                 .syscall()
@@ -171,9 +210,13 @@ namespace goo {
         // As we need to perform the loop-condition check first, we add it before translating any of the children
         // code.
         builder->newLine()
-                .label(loopLabel)
-                .comment(stmt->debugInfo())
-                .cmp("byte [tape + rbx]", "byte 0")
+                .label(loopLabel);
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+
+        builder->cmp("byte [tape + rbx]", "byte 0")
                 .jle(exitLoopLabel)
                 .newLine();
 

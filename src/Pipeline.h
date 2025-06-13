@@ -11,6 +11,10 @@
 #include "Payload.h"
 
 namespace goo {
+    struct CodeGenConfig;
+}
+
+namespace goo {
     struct AssemblerConfig;
 
     class Phase;
@@ -82,7 +86,7 @@ namespace goo {
 
         virtual PipelineBuilder &interpreter() = 0;
 
-        virtual PipelineBuilder &codeGen() = 0;
+        virtual PipelineBuilder &codeGen(CodeGenConfig config) = 0;
 
         virtual PipelineBuilder &assembler(AssemblerConfig config) = 0;
 
@@ -113,7 +117,7 @@ namespace goo {
 
         PipelineBuilder &interpreter() override;
 
-        PipelineBuilder &codeGen() override;
+        PipelineBuilder &codeGen(CodeGenConfig config) override;
 
         PipelineBuilder &assembler(AssemblerConfig config) override;
 

@@ -12,6 +12,10 @@
 #include "Pipeline.h"
 
 namespace goo {
+    struct CodeGenConfig {
+        const bool debugBuild;
+    };
+
     /// The core feature of goo, CodeGen traverses a list of statements and produces corresponding assembler code.
     /// An internal counter is maintained for keeping track of any label, to implement unique labels for guards
     /// and loops.
@@ -21,10 +25,11 @@ namespace goo {
     class CodeGen final : public Phase, public Visitor {
         int labelCounter = 0;
 
+        const CodeGenConfig config;
         std::shared_ptr<AsmBuilder> builder;
 
     public:
-        explicit CodeGen(std::shared_ptr<AsmBuilder> builder, Reporter &reporter) : Phase(reporter), builder(std::move(builder)) {};
+        explicit CodeGen(const CodeGenConfig config, std::shared_ptr<AsmBuilder> builder, Reporter &reporter) : Phase(reporter), config(config), builder(std::move(builder)) {};
         ~CodeGen() override = default;
 
         /// Translates the provided statements into assembler code.
