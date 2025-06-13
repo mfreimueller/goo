@@ -96,8 +96,6 @@ void runPrompt() {
             break;
         }
 
-        reporter.setCode(line);
-
         auto payload = std::make_shared<StringPayload>(StringPayload{.value = line});
         // ReSharper disable once CppDFAUnusedValue
         auto _ = pipeline->execute(payload);
