@@ -268,41 +268,25 @@ namespace goo {
             builder->comment(stmt->debugInfo());
         }
 
-        // Then we (ab)use our pointer inc/dec logic to move the pointer to the proper offset
-        // First we move the pointer to where we want to copy from
-        if (stmt->subOffset > 0) {
-            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->subOffset);
+        // We copy the current value in [tape + rbx] to r9b
+        builder->mov("r9b", "byte [rax + rbx]")
+                .mov("byte [rax + rbx]", "0");
+
+        // Then we (ab)use our pointer inc/dec logic to move the pointer to the proper offset where to copy data to
+        if (stmt->offset > 0) {
+            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->offset);
             visitIncrementPtr(incPtr);
             delete incPtr;
-        } else if (stmt->subOffset < 0) {
-            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->subOffset);
+        } else if (stmt->offset < 0) {
+            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->offset);
             visitDecrementPtr(decPtr);
             delete decPtr;
         }
 
-        // Then we move the value from rbx to r10 to store it, while we do the same for the value we want to copy to
-        builder->mov("r10", "rbx");
-
-        if (stmt->subOffset != 0) {
-            builder->mov("rbx", "r8"); // Reset to the original ptr location
-        }
-
-        if (stmt->addOffset > 0) {
-            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->addOffset);
-            visitIncrementPtr(incPtr);
-            delete incPtr;
-        } else if (stmt->addOffset < 0) {
-            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->addOffset);
-            visitDecrementPtr(decPtr);
-            delete decPtr;
-        }
-
-        // Now we want to do the following tape[rbx] += tape[r10]
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
 
-        builder->lea("rax", "[rel tape]")
-                .mov("r9b", "byte [rax + r10]")
-                .add("byte [rax + rbx]", "r9b")
+        // rbx now points to the tape location where we want to copy the value in r9b to
+        builder->add("byte [rax + rbx]", "r9b")
                 .cmp("byte [rax + rbx]", "0")
                 .jge(incGuard);
 

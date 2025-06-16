@@ -154,61 +154,74 @@ namespace goo {
         // We iterate over all statements trying to detect a pattern of Conditional->Decrease. In this case we
         // insert a new reset statement in place of the conditional.
         for (const auto &stmt: stmts) {
-            // Matched patterns: [>+<-], [->+<], [<+>-] or [>-<+>]
-            if (stmt->matches({IF, DEC_BYTE, INC_PTR, INC_BYTE, DEC_PTR, FI}) ||
-                stmt->matches({IF, INC_PTR, INC_BYTE, DEC_PTR, DEC_BYTE, FI}) ||
-                stmt->matches({IF, DEC_PTR, INC_BYTE, INC_PTR, DEC_BYTE, FI}) ||
-                stmt->matches({IF, INC_PTR, DEC_BYTE, DEC_PTR, INC_BYTE, INC_PTR, FI})) { // TODO: test this last combination
+            if (stmt->type == IF) {
                 const auto conditional = std::static_pointer_cast<Conditional>(stmt);
 
-                int offset = 0;
-                int addOffset = 0;
-                int subOffset = 0;
+                if (conditional->stmts.size() == 4) {
+                    bool isValid = true;
+                    int ptrShift = 0;
+                    int offset = 0;
+                    int matchedAll = INC_BYTE | INC_PTR | DEC_BYTE | DEC_PTR;
 
-                // We are only interested in direct copies. No [>++<-]. This is matter of a different optimization.
-                // If we detect that we are or remove more than one bit at a time, we bail out.
-                bool isValidCopy = true;
+                    for (int idx = 0; idx < conditional->stmts.size(); idx++) {
+                        if (conditional->stmts[idx]->type == INC_BYTE) {
+                            const auto incByte = std::static_pointer_cast<IncrementByte>(conditional->stmts[idx]);
+                            if (incByte->count != 1) {
+                                isValid = false;
+                                break;
+                            }
 
-                // we track all ptr operations to calculate the offset, which we then use to write the correct copy
-                // operation
-                for (const auto &it: conditional->stmts) {
-                    if (it->type == INC_PTR) {
-                        const auto incPtr = std::static_pointer_cast<IncrementPtr>(it);
-                        offset += incPtr->count;
-                    } else if (it->type == DEC_PTR) {
-                        const auto decPtr = std::static_pointer_cast<DecrementPtr>(it);
-                        offset -= decPtr->count;
-                    } else if (it->type == INC_BYTE) {
-                        const auto incByte = std::static_pointer_cast<IncrementByte>(it);
-                        if (incByte->count > 1) {
-                            isValidCopy = false;
+                            matchedAll &= ~ INC_BYTE;
+
+                            // If INC_PTR precedes INC_BYTE, we have a positive offset, otherwise a negative
+                            if (idx > 0) {
+                                if (conditional->stmts[idx - 1]->type == INC_PTR) {
+                                    const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx - 1]);
+                                    offset = incPtr->count;
+                                } else if (conditional->stmts[idx - 1]->type == DEC_PTR) {
+                                    const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx - 1]);
+                                    offset = -decPtr->count;
+                                } else {
+                                    isValid = false;
+                                    break;
+                                }
+                            } else {
+                                isValid = false;
+                                break;
+                            }
+                        } else if (conditional->stmts[idx]->type == DEC_BYTE) {
+                            const auto decByte = std::static_pointer_cast<DecrementByte>(conditional->stmts[idx]);
+                            if (decByte->count != 1) {
+                                isValid = false;
+                                break;
+                            }
+
+                            matchedAll &= ~ DEC_BYTE;
+                        } else if (conditional->stmts[idx]->type == INC_PTR) {
+                            const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx]);
+                            ptrShift += incPtr->count;
+
+                            matchedAll &= ~ INC_PTR;
+                        } else if (conditional->stmts[idx]->type == DEC_PTR) {
+                            const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx]);
+                            ptrShift -= decPtr->count;
+
+                            matchedAll &= ~ DEC_PTR;
+                        } else {
+                            isValid = false;
                             break;
                         }
+                    }
 
-                        addOffset = offset;
-                    } else if (it->type == DEC_BYTE) {
-                        const auto decByte = std::static_pointer_cast<DecrementByte>(it);
-                        if (decByte->count > 1) {
-                            isValidCopy = false;
-                            break;
-                        }
-
-                        subOffset = offset;
+                    if (isValid && ptrShift == 0 && matchedAll == 0) {
+                        optimizedStmts.emplace_back(new Transfer(stmt->column, stmt->line, offset));
+                        continue;
                     }
                 }
 
-                // If we have a valid copy statement we create it. Otherwise, we skip this and add the conditional as is.
-                if (isValidCopy) {
-                    optimizedStmts.emplace_back(new Transfer(stmt->column, stmt->line, addOffset, subOffset));
-
-                    if (offset > 0) {
-                        optimizedStmts.emplace_back(new IncrementPtr(stmt->column, stmt->line, offset));
-                    } else if (offset < 0) {
-                        optimizedStmts.emplace_back(new DecrementPtr(stmt->column, stmt->line, offset));
-                    }
-
-                    continue;
-                }
+                // recursively step into the conditional and try to optimize yet again
+                auto newStmts = run(conditional->stmts);
+                optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
             }
 
             // If we cannot detect a reset statement, we simply add it untouched.
