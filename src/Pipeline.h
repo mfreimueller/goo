@@ -31,10 +31,11 @@ namespace goo {
     /// To create a new pipeline, use the PipelineBuilder.
     class Pipeline {
         Reporter &reporter;
-        std::vector<std::unique_ptr<Phase> > &phases;
+        std::vector<std::shared_ptr<Phase> > &phases;
 
     public:
-        explicit Pipeline(std::vector<std::unique_ptr<Phase> > &phases, Reporter &reporter) : reporter(reporter), phases(phases) {
+        explicit Pipeline(std::vector<std::shared_ptr<Phase> > &phases, Reporter &reporter) : reporter(reporter),
+            phases(phases) {
         }
 
         ~Pipeline();
@@ -56,13 +57,28 @@ namespace goo {
     public:
         virtual ~Phase() = default;
 
-        explicit Phase(Reporter &reporter);
+        explicit Phase(Reporter &reporter): reporter(reporter) {
+        }
 
         /// Runs the phase, processing the received payload and transforming it into a new payload that is being returned
         /// to the caller.
         /// @param payload A payload to process. If the payload is not of the expected type, the behavior of the method is undefined.
         /// @return Returns a new payload that contains the processed datastream.
         virtual std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) = 0;
+    };
+
+    /// A special Phase that is used for unit testing to interject a pipeline
+    /// and retrieve the current payload.
+    class DebugPhase final : public Phase {
+        std::shared_ptr<Payload> payload;
+
+    public:
+        explicit DebugPhase(Reporter &reporter) : Phase(reporter) {
+        }
+
+        [[nodiscard]] std::shared_ptr<Payload> getPayload() const { return payload; }
+
+        std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) override;
     };
 
     /// A utility class that constructs a pipeline based on a specific list of phases. Note that the builder is
@@ -93,12 +109,14 @@ namespace goo {
         virtual PipelineBuilder &astPrinter() = 0;
 
         virtual PipelineBuilder &output() = 0;
+
+        virtual PipelineBuilder &debug(std::shared_ptr<DebugPhase> &debugPhase) = 0;
     };
 
     /// A default implementation of PipelineBuilder that constructs a pipeline based on a list of phases.
     class StandardPipelineBuilder final : public PipelineBuilder {
         Reporter &_reporter;
-        std::vector<std::unique_ptr<Phase> > phases;
+        std::vector<std::shared_ptr<Phase> > phases;
 
     public:
         explicit StandardPipelineBuilder(Reporter &reporter);
@@ -124,6 +142,8 @@ namespace goo {
         PipelineBuilder &astPrinter() override;
 
         PipelineBuilder &output() override;
+
+        PipelineBuilder &debug(std::shared_ptr<DebugPhase> &debugPhase) override;
     };
 } // goo
 

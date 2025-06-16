@@ -46,8 +46,18 @@ namespace goo {
         return true;
     }
 
-    Phase::Phase(Reporter &reporter): reporter(reporter) {
+    //
+    // DebugPhase
+    //
+
+    std::shared_ptr<Payload> DebugPhase::run(std::shared_ptr<Payload> payload) {
+        this->payload = payload;
+        return payload;
     }
+
+    //
+    // StandardPipelineBuilder
+    //
 
     StandardPipelineBuilder::StandardPipelineBuilder(Reporter &reporter): _reporter(reporter) {
     }
@@ -57,53 +67,61 @@ namespace goo {
     }
 
     PipelineBuilder &StandardPipelineBuilder::fileInput() {
-        phases.emplace_back(std::make_unique<FileInput>(_reporter));
+        phases.emplace_back(std::make_shared<FileInput>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::stringInput() {
-        phases.emplace_back(std::make_unique<StringInput>(_reporter));
+        phases.emplace_back(std::make_shared<StringInput>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::lexer() {
-        phases.emplace_back(std::make_unique<Scanner>(_reporter));
+        phases.emplace_back(std::make_shared<Scanner>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::parser() {
-        phases.emplace_back(std::make_unique<Parser>(_reporter));
+        phases.emplace_back(std::make_shared<Parser>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::interpreter() {
-        phases.emplace_back(std::make_unique<Interpreter>(_reporter));
+        phases.emplace_back(std::make_shared<Interpreter>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::codeGen(CodeGenConfig config) {
         auto asmBuilder = std::static_pointer_cast<AsmBuilder>(std::make_shared<StringAsmBuilder>());
-        phases.emplace_back(std::make_unique<CodeGen>(config, asmBuilder, _reporter));
+        phases.emplace_back(std::make_shared<CodeGen>(config, asmBuilder, _reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::optimizer() {
-        phases.emplace_back(std::make_unique<Optimizer>(_reporter));
+        phases.emplace_back(std::make_shared<Optimizer>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::assembler(AssemblerConfig config) {
-        phases.emplace_back(std::make_unique<Assembler>(config, _reporter));
+        phases.emplace_back(std::make_shared<Assembler>(config, _reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::astPrinter() {
-        phases.emplace_back(std::make_unique<AstPrinter>(_reporter));
+        phases.emplace_back(std::make_shared<AstPrinter>(_reporter));
         return *this;
     }
 
     PipelineBuilder &StandardPipelineBuilder::output() {
-        phases.emplace_back(std::make_unique<OutputPhase>(_reporter));
+        phases.emplace_back(std::make_shared<OutputPhase>(_reporter));
         return *this;
     }
+
+    PipelineBuilder &StandardPipelineBuilder::debug(std::shared_ptr<DebugPhase> &debugPhase) {
+        debugPhase = std::make_shared<DebugPhase>(_reporter);
+
+        phases.emplace_back(debugPhase);
+        return *this;
+    }
+
 } // goo
