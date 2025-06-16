@@ -65,6 +65,8 @@ namespace goo {
         void visitReset(Reset *stmt) override;
 
         void visitTransfer(Transfer *stmt) override;
+
+        void visitMultiply(Multiply *stmt) override;
     };
 }
 

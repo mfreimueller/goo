@@ -12,7 +12,8 @@ namespace goo {
         const PassVector passes = {
             new GroupPass,
             new ResetPass,
-            new TransferPass
+            new TransferPass,
+            new MultiplyPass
         };
 
         const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
@@ -157,71 +158,122 @@ namespace goo {
             if (stmt->type == IF) {
                 const auto conditional = std::static_pointer_cast<Conditional>(stmt);
 
-                if (conditional->stmts.size() == 4) {
-                    bool isValid = true;
-                    int ptrShift = 0;
-                    int offset = 0;
-                    int matchedAll = INC_BYTE | INC_PTR | DEC_BYTE | DEC_PTR;
-
-                    for (int idx = 0; idx < conditional->stmts.size(); idx++) {
-                        if (conditional->stmts[idx]->type == INC_BYTE) {
-                            const auto incByte = std::static_pointer_cast<IncrementByte>(conditional->stmts[idx]);
-                            if (incByte->count != 1) {
-                                isValid = false;
-                                break;
-                            }
-
-                            matchedAll &= ~ INC_BYTE;
-
-                            // If INC_PTR precedes INC_BYTE, we have a positive offset, otherwise a negative
-                            if (idx > 0) {
-                                if (conditional->stmts[idx - 1]->type == INC_PTR) {
-                                    const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx - 1]);
-                                    offset = incPtr->count;
-                                } else if (conditional->stmts[idx - 1]->type == DEC_PTR) {
-                                    const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx - 1]);
-                                    offset = -decPtr->count;
-                                } else {
-                                    isValid = false;
-                                    break;
-                                }
-                            } else {
-                                isValid = false;
-                                break;
-                            }
-                        } else if (conditional->stmts[idx]->type == DEC_BYTE) {
-                            const auto decByte = std::static_pointer_cast<DecrementByte>(conditional->stmts[idx]);
-                            if (decByte->count != 1) {
-                                isValid = false;
-                                break;
-                            }
-
-                            matchedAll &= ~ DEC_BYTE;
-                        } else if (conditional->stmts[idx]->type == INC_PTR) {
-                            const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx]);
-                            ptrShift += incPtr->count;
-
-                            matchedAll &= ~ INC_PTR;
-                        } else if (conditional->stmts[idx]->type == DEC_PTR) {
-                            const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx]);
-                            ptrShift -= decPtr->count;
-
-                            matchedAll &= ~ DEC_PTR;
-                        } else {
-                            isValid = false;
-                            break;
-                        }
-                    }
-
-                    if (isValid && ptrShift == 0 && matchedAll == 0) {
-                        optimizedStmts.emplace_back(new Transfer(stmt->column, stmt->line, offset));
-                        continue;
-                    }
+                int offset;
+                int incCount;
+                if (extract(conditional, offset, incCount) && incCount == 1) {
+                    optimizedStmts.emplace_back(new Transfer(stmt->column, stmt->line, offset));
+                    continue;
                 }
 
                 // recursively step into the conditional and try to optimize yet again
                 auto newStmts = run(conditional->stmts);
                 optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
+                continue;
+            }
+
+            // If we cannot detect a reset statement, we simply add it untouched.
+            optimizedStmts.push_back(stmt);
+        }
+
+        return optimizedStmts;
+    }
+
+    bool TransferPass::extract(const std::shared_ptr<Conditional>& conditional, int &offset, int &incCount) const {
+        if (conditional->stmts.size() == 4) {
+            int ptrShift = 0;
+            int matchedAll = INC_BYTE | INC_PTR | DEC_BYTE | DEC_PTR;
+
+            for (int idx = 0; idx < conditional->stmts.size(); idx++) {
+                if (conditional->stmts[idx]->type == INC_BYTE) {
+                    const auto incByte = std::static_pointer_cast<IncrementByte>(conditional->stmts[idx]);
+                    incCount = incByte->count;
+
+                    matchedAll &= ~INC_BYTE;
+
+                    // If INC_PTR precedes INC_BYTE, we have a positive offset, otherwise a negative
+                    if (idx > 0) {
+                        if (conditional->stmts[idx - 1]->type == INC_PTR) {
+                            const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx - 1]);
+                            offset = incPtr->count;
+                        } else if (conditional->stmts[idx - 1]->type == DEC_PTR) {
+                            const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx - 1]);
+                            offset = -decPtr->count;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else if (conditional->stmts[idx]->type == DEC_BYTE) {
+                    const auto decByte = std::static_pointer_cast<DecrementByte>(conditional->stmts[idx]);
+                    if (decByte->count != 1) {
+                        return false;
+                    }
+
+                    matchedAll &= ~DEC_BYTE;
+                } else if (conditional->stmts[idx]->type == INC_PTR) {
+                    const auto incPtr = std::static_pointer_cast<IncrementPtr>(conditional->stmts[idx]);
+                    ptrShift += incPtr->count;
+
+                    matchedAll &= ~INC_PTR;
+                } else if (conditional->stmts[idx]->type == DEC_PTR) {
+                    const auto decPtr = std::static_pointer_cast<DecrementPtr>(conditional->stmts[idx]);
+                    ptrShift -= decPtr->count;
+
+                    matchedAll &= ~DEC_PTR;
+                } else {
+                    return false;
+                }
+            }
+
+            return ptrShift == 0 && matchedAll == 0;
+        }
+
+        return false;
+    }
+
+    //
+    // MultiplyPass
+    //
+
+    StmtVector MultiplyPass::run(const StmtVector &stmts) const {
+        StmtVector optimizedStmts;
+
+        // We iterate over all statements and try to detect this pattern: +[...]
+
+        for (int idx = 0; idx < stmts.size(); idx++) {
+            const auto& stmt = stmts[idx];
+
+            bool isValidPreStmts = stmts[idx]->type == INC_BYTE || stmts[idx]->type == RESET;
+            if (isValidPreStmts && (idx + 1 < stmts.size() - 1 && stmts[idx + 1]->type == IF)) {
+                int times;
+                if (stmts[idx]->type == INC_BYTE) {
+                    const auto incByte = std::static_pointer_cast<IncrementByte>(stmt);
+                    times = incByte->count;
+                } else {
+                    const auto reset = std::static_pointer_cast<Reset>(stmt);
+                    times = reset->initialValue;
+
+                    // This is a special case, as we need to create a new Reset statement with an initial value of 0
+                    optimizedStmts.emplace_back(new Reset(stmt->column, stmt->line, 0, reset->tapePtrOffset));
+                }
+                const auto conditional = std::static_pointer_cast<Conditional>(stmts[idx + 1]);
+
+                int offset;
+                int count;
+                if (extract(conditional, offset, count)) {
+                    optimizedStmts.emplace_back(new Multiply(stmt->column, stmt->line, offset, count, times));
+                    idx++; // increase idx by one to skip the following, already processed conditional
+                    continue;
+                }
+
+                // we need to add the increment byte statement and recursively step into the conditional,
+                // to try to optimize yet again
+                optimizedStmts.emplace_back(stmt);
+
+                auto newStmts = run(conditional->stmts);
+                optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
+                continue;
             }
 
             // If we cannot detect a reset statement, we simply add it untouched.

@@ -297,4 +297,54 @@ namespace goo {
         builder->label(incGuard)
                 .mov("rbx", "r8");
     }
+
+    void CodeGen::visitMultiply(Multiply *stmt) {
+        // We store the original pointer in rax
+        builder->mov("r8", "rbx");
+
+        if (config.debugBuild) {
+            builder->comment(stmt->debugInfo());
+        }
+
+        const auto incByte = new IncrementByte(stmt->column, stmt->line, stmt->times);
+        visitIncrementByte(incByte);
+        delete incByte;
+
+        // We copy the current value in [tape + rbx] to r9b
+        // As multiply works like this: rax = rax * src, we move our count to rax
+        builder->mov("r9b", "byte [rax + rbx]")
+                .mov("byte [rax + rbx]", "0")
+                .mov("rax", std::to_string(stmt->count))
+                .mul("r9b")
+                .mov("r9", "rax")
+                .lea("rax", "[rel tape]");
+
+        // In r9b we have the multiplied value we then add to the offset location
+
+        // Then we (ab)use our pointer inc/dec logic to move the pointer to the proper offset where to copy data to
+        if (stmt->offset > 0) {
+            const auto incPtr = new IncrementPtr(stmt->column, stmt->line, stmt->offset);
+            visitIncrementPtr(incPtr);
+            delete incPtr;
+        } else if (stmt->offset < 0) {
+            const auto decPtr = new DecrementPtr(stmt->column, stmt->line, -stmt->offset);
+            visitDecrementPtr(decPtr);
+            delete decPtr;
+        }
+        // rbx now points to the tape location
+
+        const auto incGuard = std::format("incGuard{}", ++labelCounter);
+
+        builder->add("byte [rax + rbx]", "r9b")
+                .cmp("byte [rax + rbx]", "0")
+                .jge(incGuard);
+
+        // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
+        builder->add("byte [rax + rbx]", "127");
+
+        // Finally we reset our tape pointer to the original value, as a copy statement doesn't move the pointer.
+        builder->label(incGuard)
+                .mov("rbx", "r8");
+    }
+
 }

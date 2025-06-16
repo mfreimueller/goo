@@ -64,9 +64,19 @@ namespace goo {
         [[nodiscard]] StmtVector run(const StmtVector &stmts) const override;
     };
 
-    /// A pass that detect patterns of type [>+<-], [->+<], [<+>-] or [>-<+>] and replaces them with two reset statements which moves the
+    /// A pass that detects patterns of type [>+<-], [->+<], [<+>-] or [>-<+>] and replaces them with two reset statements which moves the
     /// value of the copier to the copy and clear the copies.
-    class TransferPass final : public OptimizationPass {
+    class TransferPass : public OptimizationPass {
+    public:
+        [[nodiscard]] StmtVector run(const StmtVector &stmts) const override;
+
+    protected:
+        bool extract(const std::shared_ptr<Conditional> &conditional, int &offset, int &incCount) const;
+    };
+
+    /// A pass that detects patterns of type +[>+<-] or similar. Compared to TransferPass, this pass allows for more than
+    /// one increase statements in the conditional.
+    class MultiplyPass final : public TransferPass {
     public:
         [[nodiscard]] StmtVector run(const StmtVector &stmts) const override;
     };
