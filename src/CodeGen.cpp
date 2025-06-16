@@ -245,7 +245,11 @@ namespace goo {
     }
 
     void CodeGen::visitDebug(Debug *stmt) {
-        builder->mov("r8b", "byte [tape + rbx]");
+        if (config.debugBuild) {
+            builder->label(std::format("debug{}", ++labelCounter))
+                    .mov("r8b", "byte [tape + rbx]")
+                    .comment("Debug info");
+        }
     }
 
     void CodeGen::visitReset(Reset *stmt) {
