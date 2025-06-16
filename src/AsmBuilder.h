@@ -40,6 +40,8 @@ namespace goo {
 
         virtual AsmBuilder &sub(std::string dest, std::string src) = 0;
 
+        virtual AsmBuilder &mul(std::string src) = 0;
+
         virtual AsmBuilder &lea(std::string dest, std::string src) = 0;
 
         virtual AsmBuilder &cmp(std::string dest, std::string src) = 0;
@@ -80,6 +82,8 @@ namespace goo {
         AsmBuilder &add(std::string dest, std::string src) override;
 
         AsmBuilder &sub(std::string dest, std::string src) override;
+
+        AsmBuilder &mul(std::string src) override;
 
         AsmBuilder &lea(std::string dest, std::string src) override;
 

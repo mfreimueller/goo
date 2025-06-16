@@ -54,6 +54,11 @@ namespace goo {
         return *this;
     }
 
+    AsmBuilder &StringAsmBuilder::mul(std::string src) {
+        code += std::format("\n\tmul {}", src);
+        return *this;
+    }
+
     AsmBuilder &StringAsmBuilder::lea(std::string dest, std::string src) {
         code += std::format("\n\tlea {}, {}", dest, src);
         return *this;
