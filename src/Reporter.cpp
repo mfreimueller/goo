@@ -36,8 +36,11 @@ namespace goo {
 
     void Reporter::error(const int line, const int column, const std::string &message) {
         errors.emplace_back(std::format("{}{}:{}: Error: {}", filename, line, column, message));
-        errors.emplace_back(std::format("\t{}\t|\t\t{}", line, codeLines.at(line - 1)));
-        errors.emplace_back(std::format("\t\t|\t\t{}^", repeatString(" ", column - 1)));
+
+        if (line < codeLines.size()) {
+            errors.emplace_back(std::format("\t{}\t|\t\t{}", line, codeLines.at(line - 1)));
+            errors.emplace_back(std::format("\t\t|\t\t{}^", repeatString(" ", column - 1)));
+        }
     }
 
     void Reporter::warning(const std::string &message) {
@@ -46,8 +49,11 @@ namespace goo {
 
     void Reporter::warning(const int line, const int column, const std::string &message) {
         warnings.emplace_back(std::format("{}{}:{}: Warning: {}", filename, line, column, message));
-        warnings.emplace_back(std::format("\t{}\t|\t\t{}", line, codeLines.at(line - 1)));
-        warnings.emplace_back(std::format("\t\t|\t\t{}^", repeatString(" ", column - 1)));
+
+        if (line < codeLines.size()) {
+            warnings.emplace_back(std::format("\t{}\t|\t\t{}", line, codeLines.at(line - 1)));
+            warnings.emplace_back(std::format("\t\t|\t\t{}^", repeatString(" ", column - 1)));
+        }
     }
 
     void Reporter::reset() {
