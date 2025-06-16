@@ -129,6 +129,12 @@ namespace goo {
 
                 optimizedStmts.emplace_back(new Reset(stmt->column, stmt->line, initialValue, 0));
                 continue;
+            } else if (stmt->type == IF) {
+                const auto conditional = std::static_pointer_cast<Conditional>(stmt);
+
+                auto newStmts = run(conditional->stmts);
+                optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, newStmts));
+                continue;
             }
 
             // If we cannot detect a reset statement, we simply add it untouched.
