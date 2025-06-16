@@ -117,4 +117,9 @@ namespace goo {
         tape[tapePtr] = 0;
     }
 
+    void Interpreter::visitMultiply(Multiply *stmt) {
+        tape[tapePtr + stmt->offset] += stmt->times * (tape[tapePtr] + stmt->count);
+    }
+
+
 } // goo

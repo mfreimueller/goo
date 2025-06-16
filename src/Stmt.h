@@ -21,6 +21,7 @@ namespace goo {
     class Debug;
     class Reset;
     class Transfer;
+    class Multiply;
 
     class Visitor;
 
@@ -90,6 +91,8 @@ namespace goo {
         virtual void visitReset(Reset *stmt) = 0;
 
         virtual void visitTransfer(Transfer *stmt) = 0;
+
+        virtual void visitMultiply(Multiply *stmt) = 0;
     };
 
     class IncrementByte final : public Stmt {
@@ -156,7 +159,7 @@ namespace goo {
         /// the pattern must begin with IF and end with FI, otherwise the behavior is unpredictable.
         /// @param pattern A pattern to match. It must begin with IF and end with FI.
         /// @return True if the pattern matches the conditional.
-        bool matches(std::vector<TokenType> pattern) const;
+        [[nodiscard]] bool matches(std::vector<TokenType> pattern) const override;
 
         void accept(Visitor *visitor) override {
             visitor->visitConditional(this);
@@ -202,7 +205,7 @@ namespace goo {
         const int tapePtrOffset;
 
         Reset(const int column, const int line, const int initialValue, const int tapePtrOffset): Stmt(column, line,
-                NONE), initialValue(initialValue), tapePtrOffset(tapePtrOffset) {
+            RESET), initialValue(initialValue), tapePtrOffset(tapePtrOffset) {
         }
 
         void accept(Visitor *visitor) override {
@@ -217,12 +220,29 @@ namespace goo {
     public:
         const int offset;
 
-        Transfer(const int column, const int line, const int offset): Stmt(column, line,
-                                                                           NONE), offset(offset) {
+        Transfer(const int column, const int line, const int offset): Stmt(column, line, TRANSFER), offset(offset) {
         }
 
         void accept(Visitor *visitor) override {
             visitor->visitTransfer(this);
+        }
+    };
+
+    /// A statement that matches a pattern of type +[>+<-], i.e. multiplies the outer increment statement ('times')
+    /// with the inner increase statement ('count') and adds it to the tape at offset.
+    class Multiply final : public Stmt {
+    public:
+        const int offset;
+        const int times;
+        const int count;
+
+        Multiply(const int column, const int line, const int offset, const int count, const int times): Stmt(column,
+            line,
+            MULTIPLY), offset(offset), count(count), times(times) {
+        }
+
+        void accept(Visitor *visitor) override {
+            visitor->visitMultiply(this);
         }
     };
 } // goo

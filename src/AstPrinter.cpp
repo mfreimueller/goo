@@ -72,6 +72,11 @@ namespace goo {
         output += std::format("{}<Transfer> {}:{}\n", indentation(), stmt->line, stmt->column);
     }
 
+    void AstPrinter::visitMultiply(Multiply *stmt) {
+        output += std::format("{}<Multiply> {}:{}\n", indentation(), stmt->line, stmt->column);
+    }
+
+
     std::string AstPrinter::indentation() const {
         std::string _indentation;
         for (int i = 0; i < depth; i++) {
