@@ -17,8 +17,8 @@
 
 namespace goo {
     std::shared_ptr<Payload> CodeGen::run(const std::shared_ptr<Payload> payload) {
-        // reset state of code gen to allow for reuse
-        labelCounter = 0;
+        // We always keep the address of the tape in rax
+        builder->lea("rax", "[rel tape]");
 
         const auto stmtPayload = std::static_pointer_cast<StmtPayload>(payload);
 
@@ -41,8 +41,6 @@ namespace goo {
 
     void CodeGen::visitIncrementByte(IncrementByte *stmt) {
         const auto incGuard = std::format("incGuard{}", ++labelCounter);
-
-        builder->lea("rax", "[rel tape]");
 
         if (stmt->count == 1) {
             builder->add("byte [rax + rbx]", "1");
@@ -75,8 +73,6 @@ namespace goo {
 
     void CodeGen::visitDecrementByte(DecrementByte *stmt) {
         const auto decGuard = std::format("decGuard{}", ++labelCounter);
-
-        builder->lea("rax", "[rel tape]");
 
         if (stmt->count == 1) {
             builder->sub("byte [rax + rbx]", "1");
@@ -200,6 +196,7 @@ namespace goo {
                 .lea("rsi", "[tape + rbx]")
                 .mov("rdx", "1")
                 .syscall()
+                .lea("rax", "[rel tape]")
                 .newLine();
     }
 
@@ -214,6 +211,7 @@ namespace goo {
                 .lea("rsi", "[tape + rbx]")
                 .mov("rdx", "1")
                 .syscall()
+                .lea("rax", "[rel tape]")
                 .newLine();
     }
 
@@ -234,8 +232,7 @@ namespace goo {
             builder->comment(stmt->debugInfo());
         }
 
-        builder->lea("rax", "[rel tape]")
-                .cmp("byte [rax + rbx]", "byte 0")
+        builder->cmp("byte [rax + rbx]", "byte 0")
                 .jle(exitLoopLabel)
                 .newLine();
 
@@ -252,9 +249,7 @@ namespace goo {
     }
 
     void CodeGen::visitReset(Reset *stmt) {
-        builder->
-                lea("rax", "[rel tape]")
-                .mov("byte [rax + rbx]", std::to_string(stmt->initialValue));
+        builder->mov("byte [rax + rbx]", std::to_string(stmt->initialValue));
 
         if (config.debugBuild) {
             builder->comment(stmt->debugInfo());
