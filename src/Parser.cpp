@@ -73,7 +73,7 @@ namespace goo {
     }
 
     bool Parser::isAtEnd() const {
-        return peek()->type == EOF_;
+        return current >= this->tokens.size() || peek()->type == EOF_;
     }
 
     std::shared_ptr<Token> Parser::peek() const {
