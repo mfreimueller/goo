@@ -11,7 +11,17 @@ namespace goo {
     /// that are processed by goo. Although some tokens, such as FI
     /// or EOF_ are tracked, they aren't processed any further (currently).
     enum TokenType {
-        INC_BYTE, DEC_BYTE, INC_PTR, DEC_PTR, OUT, IN, IF, FI, DEBUG, EOF_, NONE
+        INC_BYTE = 1,
+        DEC_BYTE = 2,
+        INC_PTR = 4,
+        DEC_PTR = 8,
+        OUT = 16,
+        IN = 32,
+        IF = 64,
+        FI = 128,
+        DEBUG = 256,
+        EOF_ = 512,
+        NONE = 1024
     };
 
     /// A token is a textual representation of a valid brainfuck statement.
