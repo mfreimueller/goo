@@ -19,9 +19,12 @@ namespace goo {
         IN = 32,
         IF = 64,
         FI = 128,
-        DEBUG = 256,
-        EOF_ = 512,
-        NONE = 1024
+        RESET = 256,
+        TRANSFER = 512,
+        MULTIPLY = 1024,
+        DEBUG,
+        EOF_,
+        NONE
     };
 
     /// A token is a textual representation of a valid brainfuck statement.
