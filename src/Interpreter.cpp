@@ -113,8 +113,8 @@ namespace goo {
     }
 
     void Interpreter::visitTransfer(Transfer *stmt) {
-        tape[tapePtr + stmt->addOffset] += tape[tapePtr + stmt->subOffset];
-        tape[tapePtr + stmt->subOffset] = 0;
+        tape[tapePtr + stmt->offset] += tape[tapePtr];
+        tape[tapePtr] = 0;
     }
 
 } // goo

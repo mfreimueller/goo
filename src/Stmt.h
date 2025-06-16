@@ -215,11 +215,10 @@ namespace goo {
     /// about where to write the bytes to and where to read them from.
     class Transfer final : public Stmt {
     public:
-        const int addOffset;
-        const int subOffset;
+        const int offset;
 
-        Transfer(const int column, const int line, const int addOffset, const int subOffset): Stmt(column, line,
-                NONE), addOffset(addOffset), subOffset(subOffset) {
+        Transfer(const int column, const int line, const int offset): Stmt(column, line,
+                                                                           NONE), offset(offset) {
         }
 
         void accept(Visitor *visitor) override {
