@@ -117,6 +117,8 @@ namespace goo {
 
         virtual PipelineBuilder &interpreter() = 0;
 
+        virtual PipelineBuilder &interpreter(std::ostream &out) = 0;
+
         virtual PipelineBuilder &codeGen(CodeGenConfig config) = 0;
 
         virtual PipelineBuilder &assembler(AssemblerConfig config) = 0;
@@ -149,6 +151,8 @@ namespace goo {
         PipelineBuilder &optimizer() override;
 
         PipelineBuilder &interpreter() override;
+
+        PipelineBuilder &interpreter(std::ostream &out) override;
 
         PipelineBuilder &codeGen(CodeGenConfig config) override;
 

@@ -103,7 +103,11 @@ namespace goo {
     }
 
     PipelineBuilder &StandardPipelineBuilder::interpreter() {
-        phases.emplace_back(std::make_shared<Interpreter>(_reporter));
+        return interpreter(std::cout);
+    }
+
+    PipelineBuilder &StandardPipelineBuilder::interpreter(std::ostream &out) {
+        phases.emplace_back(std::make_shared<Interpreter>(_reporter, out));
         return *this;
     }
 
