@@ -94,7 +94,7 @@ TEST_CASE("Optimizer: make sure that non-groupable statements are not grouped", 
     checkGroupings("<-<", {{DEC_PTR, 1}, {DEC_BYTE, 1}, {DEC_PTR, 1}});
     checkGroupings(",,", {{IN, 1}, {IN, 1}});
     checkGroupings("..", {{OUT, 1}, {OUT, 1}});
-    checkGroupings("[[]]", {{IF, 1}, {IF, 1}});
+    checkGroupings("[[]]", {});
 }
 
 TEST_CASE("Optimizer: make sure that conditionals are correctly grouped", "[optimizer]") {

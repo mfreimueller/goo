@@ -17,8 +17,6 @@ using namespace goo;
  * optimized and unoptimized statements.
  */
 
-void recursivePatternMatch(const StmtVector &stmts, const std::vector<std::pair<TokenType, int> > &expected, int &idx);
-
 std::unique_ptr<Pipeline> unoptimizedPipeline(std::shared_ptr<DebugPhase> &debugPhase, Reporter &reporter) {
     StandardPipelineBuilder builder(reporter);
     auto ptr = builder.stringInput()
