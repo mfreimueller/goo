@@ -64,8 +64,8 @@ namespace goo {
             builder->cmp("byte [rax + rbx]", "0")
                     .jge(incGuard);
 
-            // Now rbx is smaller than 0, we had an overflow. Therefor we add 127 to move to positive values.
-            builder->add("byte [rax + rbx]", "127");
+            // Now rbx is smaller than 0, we had an overflow. Therefor we add 128 to move to positive values.
+            builder->add("byte [rax + rbx]", "128");
         }
 
         builder->label(incGuard);
@@ -86,7 +86,7 @@ namespace goo {
                     .mov("byte [rax + rbx]", "127");
         } else {
             // There are two possible outcomes. First, moves is smaller or equal to the value in rbx. In this case we simply
-            // subtract rbx-moves. Otherwise, we calculate 127 - (moves-rbx) and store this in rbx.
+            // subtract rbx-moves. Otherwise, we calculate 128 - (moves-rbx) and store this in rbx.
             const auto underflowGuard = std::format("underflowGuard{}", labelCounter);
 
             builder->mov("r8b", std::to_string(stmt->count));
@@ -98,9 +98,9 @@ namespace goo {
             builder->cmp("r8b", "byte [rax + rbx]")
                     .jle(underflowGuard);
 
-            // Now rdx is larger. Therefor we subtract rbx from rdx, write 127 into rbx and subtract rdx from rbx.
+            // Now rdx is larger. Therefor we subtract rbx from rdx, write 128 into rbx and subtract rdx from rbx.
             builder->sub("r8b", "byte [rax + rbx]")
-                    .mov("byte [rax + rbx]", "127")
+                    .mov("byte [rax + rbx]", "128")
                     .label(underflowGuard);
 
             // In any case we must subtract rdx from rbx, therefor we either jump directly to here or 'fall' through.
