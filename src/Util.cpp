@@ -16,7 +16,7 @@ namespace goo {
     }
 
     std::string stripWhitespace(const std::string& s) {
-        return std::regex_replace(s, std::regex("(^[ ]+)|([ ]+$)"),"");
+        return std::regex_replace(s, std::regex("(^[ \t]+)|([ \t]+$)"),"");
     }
 
     std::vector<std::string> splitIntoLines(const std::string &s) {
