@@ -125,7 +125,7 @@ namespace goo {
 
         virtual PipelineBuilder &output() = 0;
 
-        virtual PipelineBuilder &debug(std::shared_ptr<DebugPhase> &debugPhase) = 0;
+        virtual PipelineBuilder &debug(std::shared_ptr<DebugPhase> debugPhase) = 0;
     };
 
     /// A default implementation of PipelineBuilder that constructs a pipeline based on a list of phases.
@@ -158,7 +158,7 @@ namespace goo {
 
         PipelineBuilder &output() override;
 
-        PipelineBuilder &debug(std::shared_ptr<DebugPhase> &debugPhase) override;
+        PipelineBuilder &debug(std::shared_ptr<DebugPhase> debugPhase) override;
     };
 } // goo
 

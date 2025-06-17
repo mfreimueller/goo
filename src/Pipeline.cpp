@@ -133,9 +133,7 @@ namespace goo {
         return *this;
     }
 
-    PipelineBuilder &StandardPipelineBuilder::debug(std::shared_ptr<DebugPhase> &debugPhase) {
-        debugPhase = std::make_shared<DebugPhase>(_reporter);
-
+    PipelineBuilder &StandardPipelineBuilder::debug(std::shared_ptr<DebugPhase> debugPhase) {
         phases.emplace_back(debugPhase);
         return *this;
     }
