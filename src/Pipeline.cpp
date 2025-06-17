@@ -51,7 +51,23 @@ namespace goo {
     //
 
     std::shared_ptr<Payload> DebugPhase::run(std::shared_ptr<Payload> payload) {
-        this->payload = payload;
+        switch (type) {
+            case FILE:
+                value = std::static_pointer_cast<FilePayload>(payload)->filepath;
+                break;
+            case STRING:
+                value = std::static_pointer_cast<StringPayload>(payload)->value;
+                break;
+            case TOKEN:
+                tokens = std::static_pointer_cast<TokenPayload>(payload)->tokens;
+                break;
+            case STMT:
+                stmts = std::static_pointer_cast<StmtPayload>(payload)->stmts;
+                break;
+            default:
+                break;
+        }
+
         return payload;
     }
 

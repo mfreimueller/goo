@@ -67,16 +67,31 @@ namespace goo {
         virtual std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) = 0;
     };
 
+    /// The payload type that the debug phase is about to retrieve.
+    /// This is important for correct casting and copying.
+    enum PayloadType {
+        FILE,
+        STRING,
+        TOKEN,
+        STMT
+    };
+
     /// A special Phase that is used for unit testing to interject a pipeline
     /// and retrieve the current payload.
     class DebugPhase final : public Phase {
-        std::shared_ptr<Payload> payload;
+        PayloadType type;
+
+        std::vector<std::shared_ptr<Stmt>> stmts;
+        std::vector<std::shared_ptr<Token>> tokens;
+        std::string value;
 
     public:
-        explicit DebugPhase(Reporter &reporter) : Phase(reporter) {
+        explicit DebugPhase(const PayloadType type, Reporter &reporter) : Phase(reporter), type(type) {
         }
 
-        [[nodiscard]] std::shared_ptr<Payload> getPayload() const { return payload; }
+        [[nodiscard]] std::vector<std::shared_ptr<Stmt>> getStmts() const { return stmts; }
+        [[nodiscard]] std::vector<std::shared_ptr<Token>> getTokens() const { return tokens; }
+        [[nodiscard]] std::string getValue() const { return value; }
 
         std::shared_ptr<Payload> run(std::shared_ptr<Payload> payload) override;
     };
