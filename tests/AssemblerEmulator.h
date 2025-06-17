@@ -5,6 +5,7 @@
 #ifndef ASSEMBLEREMULATOR_H
 #define ASSEMBLEREMULATOR_H
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -32,7 +33,7 @@ class AssemblerEmulator {
 
     int cmpResult = 0;
 
-    std::string output;
+    std::stringstream output;
 
     // registers
     int rax = 0, rbx = 0, rcx = 0, rdx = 0, rdi = 0, rsi = 0, r8 = 0, r9 = 0, r10 = 0;

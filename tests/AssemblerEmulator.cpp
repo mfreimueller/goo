@@ -52,7 +52,7 @@ std::string AssemblerEmulator::execute(const std::string &code) {
         execPtr = executeLine(execPtr);
     }
 
-    return output;
+    return output.str();
 }
 
 int AssemblerEmulator::executeLine(const int execPtr) {
@@ -220,14 +220,14 @@ int AssemblerEmulator::jmp(Params args, int execPtr) {
 
 int AssemblerEmulator::syscall(Params args, int execPtr) {
     if (rax == 1 && rdi == 1) {
-        output += std::format("{}", tape[rbx]);
+        const auto *bytes = static_cast<unsigned char *>(static_cast<void *>(&tape[rbx]));
+        output << std::to_string(bytes[0]) << std::flush;
         return execPtr + 1;
     }
 
     // any other call: ignore
     return execPtr + 1;
 }
-
 
 void *AssemblerEmulator::getPointer(const std::string &label) {
     if (label == "rax")
