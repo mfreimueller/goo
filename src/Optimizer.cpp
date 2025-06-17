@@ -37,13 +37,20 @@ namespace goo {
 
         for (int idx = 0; idx < stmts.size(); idx++) {
             if (const auto &stmt = stmts[idx]; stmt->type < OUT) {
-                auto groupedStmt = groupStmts(idx, stmts);
-                optimizedStmts.emplace_back(groupedStmt);
+                const auto groupedStmt = groupStmts(idx, stmts);
+
+                // if we can eliminate a statement (e.g. +-+-+), null is returned
+                if (groupedStmt != nullptr) {
+                    optimizedStmts.emplace_back(groupedStmt);
+                }
             } else if (stmt->type == IF) {
                 const auto conditional = std::static_pointer_cast<Conditional>(stmt);
-                auto subStmts = run(conditional->stmts);
+                const auto subStmts = run(conditional->stmts);
 
-                optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, subStmts));
+                // strip any conditionals that turn out to be empty
+                if (!subStmts.empty()) {
+                    optimizedStmts.emplace_back(new Conditional(stmt->column, stmt->line, subStmts));
+                }
             } else {
                 optimizedStmts.push_back(stmt);
             }
@@ -101,7 +108,7 @@ namespace goo {
             }
         }
 
-        return stmt;
+        return nullptr;
     }
 
     //
