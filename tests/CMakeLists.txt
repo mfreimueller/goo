@@ -7,6 +7,7 @@ add_executable(unit_tests
         Parser_TestCase.cpp
         Optimizer_TestCase.cpp
         OptimizedStmts_TestCase.cpp
+        Optimized_Interpreter_TestCase.cpp
         AssemblerEmulator.cpp
         AssemblerEmulator.h
         AssemblerEmulator_TestCase.cpp)
