@@ -31,11 +31,11 @@ namespace goo {
     /// To create a new pipeline, use the PipelineBuilder.
     class Pipeline {
         Reporter &reporter;
-        std::vector<std::shared_ptr<Phase> > &phases;
+        std::vector<std::shared_ptr<Phase> > phases;
 
     public:
-        explicit Pipeline(std::vector<std::shared_ptr<Phase> > &phases, Reporter &reporter) : reporter(reporter),
-            phases(phases) {
+        explicit Pipeline(std::vector<std::shared_ptr<Phase> > phases, Reporter &reporter) : reporter(reporter),
+            phases(std::move(phases)) {
         }
 
         ~Pipeline();
