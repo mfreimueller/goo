@@ -5,6 +5,8 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
+#include <iostream>
+
 #include "Payload.h"
 #include "Pipeline.h"
 #include "Stmt.h"
@@ -29,11 +31,13 @@ namespace goo {
     /// debug information about the current state of the Interpreter, such as the
     /// tape pointer and the tape itself.
     class Interpreter final : public Phase, public Visitor {
-        unsigned char *tape;
+        char *tape;
         int tapePtr;
 
+        std::ostream &out;
+
     public:
-        explicit Interpreter(Reporter &reporter);
+        explicit Interpreter(Reporter &reporter, std::ostream &out = std::cout);
         ~Interpreter() override;
 
         /// Interprets a list of statements, modifying (if applicable) the internal type.

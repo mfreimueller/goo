@@ -18,8 +18,8 @@
 #define TAPE_SIZE 30000
 
 namespace goo {
-    Interpreter::Interpreter(Reporter &reporter): Phase(reporter), tapePtr(0) {
-        tape = new unsigned char[TAPE_SIZE];
+    Interpreter::Interpreter(Reporter &reporter, std::ostream &out): Phase(reporter), tapePtr(0), out(out) {
+        tape = new char[TAPE_SIZE];
         memset(tape, 0, TAPE_SIZE);
     }
 
@@ -50,10 +50,16 @@ namespace goo {
 
     void Interpreter::visitIncrementByte(IncrementByte *stmt) {
         tape[tapePtr] += stmt->count;
+        if (tape[tapePtr] < 0) {
+            tape[tapePtr] += 128;
+        }
     }
 
     void Interpreter::visitDecrementByte(DecrementByte *stmt) {
         tape[tapePtr] -= stmt->count;
+        if (tape[tapePtr] < 0) {
+            tape[tapePtr] = 128 + tape[tapePtr];
+        }
     }
 
     void Interpreter::visitIncrementPtr(IncrementPtr *stmt) {
@@ -87,7 +93,7 @@ namespace goo {
     }
 
     void Interpreter::visitOutput(Output *stmt) {
-        std::cout << tape[tapePtr] << std::flush;
+        out << std::to_string(tape[tapePtr]) << std::flush;
     }
 
     void Interpreter::visitConditional(Conditional *stmt) {
@@ -97,7 +103,7 @@ namespace goo {
     }
 
     void Interpreter::visitDebug(Debug *stmt) {
-        std::cout << std::format("DEBUG: line = {}, column = {}, ptr = {}, tape = ", stmt->line, stmt->column, tapePtr);
+        out << std::format("DEBUG: line = {}, column = {}, ptr = {}, tape = ", stmt->line, stmt->column, tapePtr);
 
         for (int idx = 0; idx < TAPE_SIZE; idx++) {
             if (tape[idx] != 0) {
@@ -105,7 +111,7 @@ namespace goo {
             }
         }
 
-        std::cout << std::endl;
+        out << std::endl;
     }
 
     void Interpreter::visitReset(Reset *stmt) {
@@ -113,12 +119,22 @@ namespace goo {
     }
 
     void Interpreter::visitTransfer(Transfer *stmt) {
-        tape[tapePtr + stmt->offset] += tape[tapePtr];
+        int copyAddr = tapePtr + stmt->offset;
+        tape[copyAddr] += tape[tapePtr];
         tape[tapePtr] = 0;
+
+        if (tape[copyAddr] < 0) {
+            tape[copyAddr] += 128;
+        }
     }
 
     void Interpreter::visitMultiply(Multiply *stmt) {
-        tape[tapePtr + stmt->offset] += stmt->times * (tape[tapePtr] + stmt->count);
+        const int copyAddr = tapePtr + stmt->offset;
+        tape[copyAddr] += stmt->times * (tape[tapePtr] + stmt->count);
+
+        if (tape[copyAddr] < 0) {
+            tape[copyAddr] += 128;
+        }
     }
 
 
