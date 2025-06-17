@@ -19,9 +19,10 @@ using namespace goo;
 void recursivePatternMatch(const StmtVector &stmts, const std::vector<std::pair<TokenType, int> > &expected, int &idx);
 
 std::shared_ptr<Payload> mockStmts(const std::string &code) {
-    std::shared_ptr<DebugPhase> debugPhase;
-
     Reporter reporter;
+
+    const auto debugPhase = std::make_shared<DebugPhase>(STMT, reporter);
+
     StandardPipelineBuilder builder(reporter);
     const auto &pipeline = builder.stringInput()
             .lexer()
@@ -32,7 +33,7 @@ std::shared_ptr<Payload> mockStmts(const std::string &code) {
     bool success = pipeline->execute(std::make_shared<StringPayload>(StringPayload{.value = code}));
     REQUIRE(success);
 
-    return debugPhase->getPayload();
+    return std::make_shared<StmtPayload>(StmtPayload { .stmts = debugPhase->getStmts() });
 }
 
 void checkGroupings(const std::string &inputCode, const std::vector<std::pair<TokenType, int> > &expected) {
