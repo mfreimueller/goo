@@ -41,14 +41,13 @@ std::unique_ptr<Pipeline> optimizedPipeline(std::shared_ptr<DebugPhase> &debugPh
             .build();
 }
 
-TEST_CASE("Optimizer: make sure that ", "[optimizer]") {
+void testStmts(const std::string &code) {
     Reporter reporter;
     auto debugPhase = std::make_shared<DebugPhase>(STRING, reporter);
 
     auto unoptimized = unoptimizedPipeline(debugPhase, reporter);
     auto optimized = optimizedPipeline(debugPhase, reporter);
 
-    const auto &code = "++[>++++<-]>.";
     const auto &payload = std::make_shared<StringPayload>(StringPayload{.value = code});
 
     REQUIRE(unoptimized->execute(payload));
@@ -66,4 +65,30 @@ TEST_CASE("Optimizer: make sure that ", "[optimizer]") {
     delete assembler;
 
     REQUIRE(unoptimizedResult == optimizedResult);
+}
+
+TEST_CASE("Optimizer: make sure that multiply statements are optimized correctly", "[optimizer]") {
+    testStmts("++[>++++<-]>.");
+    testStmts("+[->+<]>.");
+    testStmts(">+[-<+>]<.");
+}
+
+TEST_CASE("Optimizer: make sure that reset statements are optimized correctly", "[optimizer]") {
+    testStmts("++++.[-].");
+}
+
+TEST_CASE("Optimizer: make sure that grouping statements are optimized correctly", "[optimizer]") {
+    testStmts("++++.");
+    testStmts("----.");
+    testStmts("++--++.");
+    testStmts("--++--.");
+    testStmts("+-+-+-.");
+    testStmts("+>>>+.");
+    testStmts("[+-+-].");
+}
+
+TEST_CASE("Optimizer: make sure that statements are not grouped when mixed", "[optimizer]") {
+    testStmts("+>+<+>+.");
+    testStmts("-<->-<-.");
+    testStmts("+>->+>+.");
 }
