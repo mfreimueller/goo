@@ -20,6 +20,10 @@ namespace goo {
     /// the vector.
     std::vector<std::string> splitIntoLines(const std::string &s);
 
+    /// Splits a string by a given delimiter. If the delimiter couldn't be
+    /// found in s, the resulting vector contains only s.
+    std::vector<std::string> splitStringBy(const std::string &s, char delimiter);
+
     /// Repeat a given string count-times.
     std::string repeatString(const std::string &s, int count);
 } // goo

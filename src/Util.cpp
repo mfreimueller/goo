@@ -20,15 +20,19 @@ namespace goo {
     }
 
     std::vector<std::string> splitIntoLines(const std::string &s) {
-        std::vector<std::string> lines;
-        std::stringstream ss(s);
-        std::string line;
+        return splitStringBy(s, '\n');
+    }
 
-        while (std::getline(ss, line)) {
-            lines.push_back(line);
+    std::vector<std::string> splitStringBy(const std::string &s, char delimiter) {
+        std::vector<std::string> parts;
+        std::stringstream ss(s);
+        std::string part;
+
+        while (std::getline(ss, part, ' ')) {
+            parts.push_back(part);
         }
 
-        return lines;
+        return parts;
     }
 
     std::string repeatString(const std::string& s, const int count) {
